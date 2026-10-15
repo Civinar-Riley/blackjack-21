@@ -123,10 +123,12 @@ function init() {
 
     $('#btnBack').addEventListener('click', backToWall);
     $('#btnReload').addEventListener('click', () => { if (curGame != null) playGame(curGame); });
+    /* 全屏：直接对 iframe 本体 requestFullscreen（沙箱内容无需特权，Esc 退出为浏览器原生行为）；
+     * 不对容器全屏——容器全屏时 iframe 高度仍是 72vh，下方会留黑边（bug） */
     $('#btnFull').addEventListener('click', () => {
-        const stage = $('#playerStage');
+        const frame = $('#gameFrame');
         if (document.fullscreenElement) document.exitFullscreen();
-        else if (stage.requestFullscreen) stage.requestFullscreen();
+        else if (frame.requestFullscreen) frame.requestFullscreen();
     });
     $('#btnClearSave').addEventListener('click', () => {
         if (curGame == null) return;
