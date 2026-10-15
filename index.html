@@ -2,181 +2,37 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>🃏 21点 - 黑杰克</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎮 游戏厅</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>" />
 </head>
 <body>
-<!-- ========== 成就通知 ========== -->
-    <div class="achievement-toast" id="achievementToast">
-        <span class="ach-icon" id="achToastIcon">🏆</span>
-        <div class="ach-text">
-            <div class="ach-title" id="achToastTitle">成就解锁！</div>
-            <div class="ach-desc" id="achToastDesc">描述</div>
-        </div>
+  <div id="hall">
+    <!-- 大厅首页：游戏卡片墙 -->
+    <div id="viewWall">
+      <div class="hall-hero">
+        <h1>🎮 游戏厅</h1>
+        <p>选一款，开始玩 —— 存档自动保存，刷新不丢</p>
+      </div>
+      <div class="games-wall" id="gamesWall"></div>
+      <div class="hall-foot">游戏在独立沙箱中运行，读不到页面其他数据 · arcade 实验分支</div>
     </div>
 
-    <!-- ========== 统计弹窗 ========== -->
-    <div class="stats-overlay" id="statsOverlay">
-        <div class="stats-panel" role="dialog" aria-label="统计与成就">
-            <h2>📊 统计与成就</h2>
-            <div class="stats-grid" id="statsGrid"></div>
-            <div class="achievements-section">
-                <h3>🏅 成就</h3>
-                <div class="ach-list" id="achList"></div>
-            </div>
-            <button class="btn-close-stats" id="btnCloseStats">关闭</button>
-        </div>
+    <!-- 游戏播放页 -->
+    <div id="viewPlayer" class="view-hidden">
+      <div class="player-bar">
+        <button class="p-back" id="btnBack">← 返回大厅</button>
+        <span class="p-title" id="playerTitle"></span>
+        <button class="p-btn" id="btnReload">⟲ 重载</button>
+        <button class="p-btn" id="btnFull">⛶ 全屏</button>
+        <button class="p-btn danger" id="btnClearSave">清空存档</button>
+      </div>
+      <div class="player-stage" id="playerStage">
+        <iframe id="gameFrame" title="游戏" sandbox="allow-scripts allow-pointer-lock allow-modals" allowfullscreen></iframe>
+      </div>
+      <div class="player-tip" id="playerTip"></div>
     </div>
-
-    <!-- ========== 使用说明弹窗 ========== -->
-    <div class="stats-overlay" id="helpOverlay">
-        <div class="stats-panel" role="dialog" aria-label="使用说明">
-            <h2>📖 使用说明</h2>
-            <div class="help-content">
-                <div class="help-section">
-                    <h3>🎯 游戏目标</h3>
-                    <p>尽可能接近21点但不能超过，打败庄家赢得筹码。</p>
-                </div>
-                <div class="help-section">
-                    <h3>🃏 牌面点数</h3>
-                    <p>2-10 按面值计算，J/Q/K 为10点，A 为11或1点。</p>
-                </div>
-                <div class="help-section">
-                    <h3>🎮 操作说明</h3>
-                    <ul>
-                        <li><strong>要牌 (H)</strong>：再要一张牌</li>
-                        <li><strong>停牌 (S)</strong>：停止要牌</li>
-                        <li><strong>加倍 (D)</strong>：下注翻倍，只能再要一张牌</li>
-                        <li><strong>分牌 (P)</strong>：两张相同点数的牌可以分成两手</li>
-                    </ul>
-                </div>
-                <div class="help-section">
-                    <h3>💰 特殊规则</h3>
-                    <ul>
-                        <li><strong>黑杰克</strong>：首两张牌为A+10/J/Q/K，赔付3:2</li>
-                        <li><strong>保险</strong>：庄家明牌为A时可购买保险（赌注一半）</li>
-                        <li><strong>平局</strong>：点数相同退还赌注</li>
-                    </ul>
-                </div>
-                <div class="help-section">
-                    <h3>⌨️ 快捷键</h3>
-                    <p>H要牌 | S停牌 | D加倍 | P分牌 | 空格发牌 | R重置 | M音效</p>
-                </div>
-            </div>
-            <button class="btn-close-stats" id="btnCloseHelp">关闭</button>
-        </div>
-    </div>
-
-    <!-- ========== 重生确认弹窗 ========== -->
-    <div class="stats-overlay" id="rebornOverlay">
-        <div class="reborn-panel" role="dialog" aria-label="重生确认">
-            <div class="reborn-icon">💀</div>
-            <h2 id="rebornTitle">确定要重生吗？</h2>
-            <p id="rebornDesc" class="reborn-desc">这将清除所有游戏数据，包括筹码、统计和成就。</p>
-            <div class="reborn-progress">
-                <span class="reborn-dot" id="dot1"></span>
-                <span class="reborn-dot" id="dot2"></span>
-                <span class="reborn-dot" id="dot3"></span>
-            </div>
-            <p id="rebornHint" class="reborn-hint">点击下方按钮开始确认</p>
-            <button class="btn-reborn-confirm" id="btnRebornConfirm">确认重生</button>
-            <button class="btn-close-stats" id="btnCloseReborn">取消</button>
-        </div>
-    </div>
-
-    <!-- ========== 游戏主界面 ========== -->
-    <div class="layout-wrapper" id="layoutWrapper">
-        <!-- 左侧成就栏 -->
-        <div class="side-panel side-panel-left" id="achPanel">
-            <div class="side-panel-title">🏆 成就</div>
-            <div class="side-ach-list" id="sideAchList"></div>
-        </div>
-
-        <!-- 中间牌桌 -->
-        <div class="game-container" id="app">
-        <div class="header">
-            <div class="title">♠️ <span>21</span> 点</div>
-            <div class="header-right">
-                <div class="chip-display" id="chipDisplay">
-                    <span class="chip-icon">💰</span>
-                    <span class="chip-amount" id="chipAmount">5000</span>
-                </div>
-                <div class="score-board">
-                    <div class="score-item">🏆 <span class="num" id="wins">0</span></div>
-                    <div class="score-item">⚖️ <span class="num" id="pushes">0</span></div>
-                    <div class="score-item">💔 <span class="num" id="losses">0</span></div>
-                </div>
-                <button class="btn-stats-toggle" id="btnStatsToggle" aria-label="统计与成就" title="统计与成就">📊</button>
-                <button class="btn-stats-toggle" id="btnHelpToggle" aria-label="使用说明" title="使用说明">❓</button>
-                <button class="btn-stats-toggle" id="btnSoundToggle" aria-label="音效开关" title="音效开关">🔊</button>
-                <button class="btn-reborn" id="btnReborn" title="失去所有，重来一次">💀</button>
-            </div>
-        </div>
-
-        <!-- 下注区域 -->
-        <div class="betting-area" id="bettingArea">
-            <span class="bet-label">下注：</span>
-            <div class="bet-chips" id="betChips"></div>
-            <div class="bet-info">
-                <span class="bet-current"><span class="label">赌注</span> <span id="betAmount">0</span></span>
-                <button class="btn-bet-rebet" id="btnRebet" disabled>🔁 同注再战</button>
-                <button class="btn-bet-clear" id="btnClearBet">✖ 清空</button>
-                <button class="btn-bet-deal" id="btnDeal" disabled>发牌</button>
-            </div>
-        </div>
-
-        <!-- 保险区域 -->
-        <div class="insurance-area hidden" id="insuranceArea">
-            <span class="insurance-text">庄家明牌为 <strong>A</strong>，是否购买保险？（赌注一半：<strong id="insuranceCost">0</strong>）</span>
-            <div class="insurance-actions">
-                <button class="btn-insurance btn-insurance-yes" id="btnInsuranceYes">✅ 购买</button>
-                <button class="btn-insurance btn-insurance-no" id="btnInsuranceNo">❌ 不买</button>
-            </div>
-        </div>
-
-        <div class="table">
-            <!-- 庄家 -->
-            <div class="dealer-area">
-                <div class="area-label">
-                    <span>🤖 庄家</span>
-                    <span class="score-tag" id="dealerScoreDisplay">?</span>
-                </div>
-                <div class="hand" id="dealerHand"></div>
-            </div>
-
-            <!-- 玩家 -->
-            <div class="player-area" id="playerArea">
-                <div class="area-label">
-                    <span>🧑 玩家</span>
-                    <span class="score-tag" id="playerScoreDisplay">0</span>
-                </div>
-                <div id="playerHandsContainer"></div>
-            </div>
-        </div>
-
-        <div class="message-area">
-            <div class="message" id="gameMessage" aria-live="polite">点击「发牌」开始</div>
-        </div>
-
-        <div class="actions">
-            <button class="btn btn-hit" id="btnHit" disabled>✋ 要牌</button>
-            <button class="btn btn-stand" id="btnStand" disabled>✊ 停牌</button>
-            <button class="btn btn-double" id="btnDouble" disabled>📈 加倍</button>
-            <button class="btn btn-split" id="btnSplit" disabled>✂️ 分牌</button>
-            <button class="btn btn-reset" id="btnReset">🔄 重新下注</button>
-            <button class="btn btn-rebuy hidden-btn" id="btnRebuy">🌅 重新开始 (+5000)</button>
-        </div>
-
-        <div class="shoe-info" id="shoeInfo">🃏 牌靴剩余: <span id="shoeCount">0</span> 张</div>
-    </div>
-
-        <!-- 右侧统计栏 -->
-        <div class="side-panel side-panel-right" id="statsPanel">
-            <div class="side-panel-title">📊 统计</div>
-            <div class="side-stats-grid" id="sideStatsGrid"></div>
-        </div>
-    </div>
-  <script type="module" src="/src/main.js"></script>
+  </div>
+  <script type="module" src="/src/hall/hall.js"></script>
 </body>
 </html>

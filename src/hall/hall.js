@@ -1,0 +1,143 @@
+/* 游戏厅壳：卡片墙首页 + 沙箱 iframe 播放 + 存档桥
+ * 架构：Vite 壳 + public/games/*.html 单文件游戏，运行时 fetch → 注入 localStorage
+ * 垫片 → srcdoc 进沙箱 iframe（无 allow-same-origin，游戏读不到壳数据）。
+ * 存档桥纯函数来自 src/hall/gamesave.js（用户老项目 game-hall 的 battle-tested 模块）。
+ */
+import { saveKey, validateSavePayload, shimSource } from './gamesave.js';
+import './hall.css';
+
+/* 游戏清单：加游戏 = public/games/ 里丢一个单文件 html + 在这里加一行 */
+const GAMES = [
+    { file: 'blackjack.html',   icon: '🃏', name: '21 点 - 黑杰克', desc: '经典黑杰克：下注、要牌、加倍、分牌，40 个成就等你解锁' },
+    { file: 'minesweeper.html',  icon: '💣', name: '扫雷',           desc: '经典扫雷：扫开所有安全格，别踩到雷' },
+    { file: 'horse-racing.html', icon: '🏇', name: '赛马场',         desc: '赛马竞速：看准马儿下注，体验一把赌马' },
+    { file: 'match-pairs.html',  icon: '🀄', name: '连连看',         desc: '连连看消消乐：把相同的牌全部配对消除' },
+];
+
+const $ = (s, root) => (root || document).querySelector(s);
+const $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
+function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+let curGame = null;
+const knownFrames = new Set();
+
+/* ---------------- 存档桥 ---------------- */
+function readSave(file) {
+    try { return JSON.parse(localStorage.getItem(saveKey(file)) || '{}') || {}; }
+    catch (e) { return {}; }
+}
+function writeSave(file, data) {
+    try { localStorage.setItem(saveKey(file), JSON.stringify(data)); }
+    catch (e) { /* 配额满/隐私模式：静默失败，游戏不崩 */ }
+}
+let flushT = null, pending = null;
+function flushSaves() {
+    if (!pending) return;
+    Object.keys(pending).forEach(f => writeSave(f, pending[f]));
+    pending = null;
+}
+window.addEventListener('pagehide', flushSaves);
+
+window.addEventListener('message', e => {
+    if (!knownFrames.has(e.source)) return;
+    const v = validateSavePayload(e.data);
+    if (!v) return;
+    pending = pending || {};
+    pending[v.file] = v.data;
+    clearTimeout(flushT);
+    flushT = setTimeout(flushSaves, 300);
+});
+
+/* 垫片必须先于游戏脚本执行：有 <head> 插其后，否则放最前 */
+function withShim(html, file) {
+    const shim = shimSource(file, JSON.stringify(readSave(file)));
+    return /<head[^>]*>/i.test(html)
+        ? html.replace(/<head[^>]*>/i, m => m + shim)
+        : shim + html;
+}
+
+/* ---------------- 首页卡片墙 ---------------- */
+function renderWall() {
+    $('#viewWall').classList.remove('view-hidden');
+    $('#viewPlayer').classList.add('view-hidden');
+    document.title = '🎮 游戏厅';
+}
+
+function backToWall() {
+    flushSaves();
+    curGame = null;
+    const frame = $('#gameFrame');
+    knownFrames.delete(frame.contentWindow);
+    frame.removeAttribute('srcdoc');
+    renderWall();
+}
+
+/* ---------------- 播放 ---------------- */
+async function playGame(i) {
+    const g = GAMES[i];
+    if (!g) return;
+    flushSaves();
+    curGame = i;
+    $$('.game-card').forEach((c, k) => c.classList.toggle('active', k === i));
+    $('#playerTitle').textContent = `${g.icon} ${g.name}`;
+    $('#viewWall').classList.add('view-hidden');
+    $('#viewPlayer').classList.remove('view-hidden');
+    document.title = `${g.icon} ${g.name} - 游戏厅`;
+
+    const frame = $('#gameFrame');
+    $('#playerTip').textContent = '🎮 加载中…';
+    try {
+        const resp = await fetch(`games/${g.file}`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const html = await resp.text();
+        knownFrames.add(frame.contentWindow);
+        frame.srcdoc = withShim(html, g.file);
+        $('#playerTip').textContent = '游戏在独立沙箱中运行，存档自动保存（刷新不丢）';
+    } catch (err) {
+        $('#playerTip').textContent = `⚠️ 游戏加载失败：${esc(err.message)}`;
+    }
+}
+
+/* ---------------- 启动 ---------------- */
+function init() {
+    const wall = $('#gamesWall');
+    wall.innerHTML = GAMES.map((g, i) => `
+        <div class="game-card" data-i="${i}" role="button" tabindex="0">
+            <span class="g-icon">${g.icon}</span>
+            <div class="g-name">${esc(g.name)}</div>
+            <div class="g-desc">${esc(g.desc)}</div>
+            <span class="g-play">▶ 开始游戏</span>
+        </div>`).join('');
+    wall.addEventListener('click', e => {
+        const card = e.target.closest('.game-card');
+        if (card) playGame(+card.dataset.i);
+    });
+    wall.addEventListener('keydown', e => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        const card = e.target.closest('.game-card');
+        if (card) playGame(+card.dataset.i);
+    });
+
+    $('#btnBack').addEventListener('click', backToWall);
+    $('#btnReload').addEventListener('click', () => { if (curGame != null) playGame(curGame); });
+    $('#btnFull').addEventListener('click', () => {
+        const stage = $('#playerStage');
+        if (document.fullscreenElement) document.exitFullscreen();
+        else if (stage.requestFullscreen) stage.requestFullscreen();
+    });
+    $('#btnClearSave').addEventListener('click', () => {
+        if (curGame == null) return;
+        const g = GAMES[curGame];
+        if (!confirm(`确定清空「${g.name}」的存档吗？`)) return;
+        try { localStorage.removeItem(saveKey(g.file)); } catch (e) {}
+        playGame(curGame);
+    });
+
+    renderWall();
+    console.log('🎮 游戏厅已加载，共', GAMES.length, '个游戏');
+}
+
+init();

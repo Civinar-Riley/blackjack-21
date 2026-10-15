@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Minesweeper Game - Classic puzzle game, find all mines">
+<title>扫雷游戏 | Minesweeper</title>
+
+<!-- Favicon -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💣</text></svg>">
+
+<style>
+/* ==================== Reset & Variables ==================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    /* 深色主题核心色板 */
+    --bg-top: #0f1118;
+    --bg-bottom: #1a1f35;
+    --surface: rgba(28, 32, 45, 0.92);
+    --surface-strong: #20242f;
+    --surface-border: rgba(255, 255, 255, 0.09);
+    --glass-border: rgba(255, 255, 255, 0.14);
+
+    --text-primary: #eef1f8;
+    --text-secondary: #9aa3b5;
+    --text-muted: #6b7385;
+
+    /* 霓虹渐变 */
+    --accent-1: #6c8cff;
+    --accent-2: #a78bfa;
+    --primary-gradient: linear-gradient(135deg, #6c8cff 0%, #a78bfa 100%);
+    --danger-gradient: linear-gradient(135deg, #f472b6 0%, #ef4444 100%);
+    --warn-gradient: linear-gradient(135deg, #fbbf24 0%, #fb7185 100%);
+    --ok-gradient: linear-gradient(135deg, #34d399 0%, #22d3ee 100%);
+
+    /* 棋盘格子 */
+    --tile-bg: #2e3342;
+    --tile-bg-hover: #3a4154;
+    --tile-revealed: #1b1f2b;
+    --tile-border: rgba(255, 255, 255, 0.07);
+    --tile-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45);
+
+    /* 阴影 */
+    --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 10px 32px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.55);
+    --glow: 0 0 24px rgba(108, 140, 255, 0.35);
+
+    /* 只过渡合成类属性，避免 box-shadow / backdrop 触发昂贵的重绘 */
+    --transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+    --radius-lg: 24px;
+    --radius-md: 14px;
+}
+
+html {
+    color-scheme: dark;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+        'Helvetica Neue', Arial, 'Noto Sans', sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    background: radial-gradient(1200px 600px at 20% -10%, rgba(108, 140, 255, 0.14), transparent 60%),
+        radial-gradient(1000px 500px at 110% 110%, rgba(167, 139, 250, 0.12), transparent 60%),
+        linear-gradient(160deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+    min-height: 100vh;
+    color: var(--text-primary);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ==================== Header ==================== */
+.game-header {
+    background: rgba(15, 17, 24, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--surface-border);
+    padding: 1.25rem 2rem;
+}
+
+.header-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.game-title {
+    font-size: clamp(1.4rem, 4vw, 2.2rem);
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    background: linear-gradient(135deg, #a5b8ff 0%, #c4b5fd 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.game-title .icon {
+    font-size: 2.2rem;
+    line-height: 1;
+    -webkit-text-fill-color: initial;
+    filter: drop-shadow(0 0 10px rgba(108, 140, 255, 0.5));
+}
+
+.rules-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.4rem;
+    background: var(--surface);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+    border-radius: 50px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+}
+
+.rules-btn:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: var(--glow);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+/* ==================== Stats Panel ==================== */
+.stats-panel {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.25rem;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--surface);
+    padding: 1.4rem 1.5rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--surface-border);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    border-radius: 4px;
+}
+
+.stat-card:nth-child(1)::before { background: var(--accent-1); }
+.stat-card:nth-child(2)::before { background: var(--ok-gradient); }
+.stat-card:nth-child(3)::before { background: var(--warn-gradient); }
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow-md), var(--glow);
+}
+
+.stat-card .icon {
+    font-size: 2rem;
+    line-height: 1;
+    filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.4));
+}
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+}
+
+.stat-value {
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-top: 0.2rem;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ==================== Difficulty Panel ==================== */
+.difficulty-panel {
+    max-width: 1200px;
+    margin: 0 auto 2rem;
+    padding: 0 2rem;
+}
+
+.difficulty-panel h3 {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 1.2rem;
+}
+
+.difficulty-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1.1rem;
+    flex-wrap: wrap;
+}
+
+.difficulty-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 150px;
+    padding: 1.4rem 2rem;
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+}
+
+.difficulty-btn .icon {
+    font-size: 1.8rem;
+    line-height: 1;
+    filter: grayscale(0.2);
+    transition: transform var(--transition);
+}
+
+.difficulty-btn span {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.difficulty-btn small {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.difficulty-btn:hover {
+    transform: translateY(-4px);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow-md), var(--glow);
+}
+
+.difficulty-btn:hover .icon {
+    transform: scale(1.15);
+}
+
+.difficulty-btn.active {
+    border-color: var(--accent-1);
+    background: linear-gradient(135deg, rgba(108, 140, 255, 0.18) 0%, rgba(167, 139, 250, 0.18) 100%);
+    box-shadow: var(--shadow-md), var(--glow);
+}
+
+.difficulty-btn.active::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 15%;
+    right: 15%;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--primary-gradient);
+}
+
+.difficulty-btn.active small {
+    color: var(--accent-1);
+}
+
+/* ==================== Game Container ==================== */
+.game-container {
+    max-width: 1200px;
+    margin: 0 auto 2rem;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: center;
+}
+
+#board {
+    display: inline-grid;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.35);
+    padding: 12px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--surface-border);
+    box-shadow: var(--shadow-lg);
+    contain: layout style;
+}
+
+#board div {
+    width: 44px;
+    height: 44px;
+    background: var(--tile-bg);
+    border: 1px solid var(--tile-border);
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.35rem;
+    font-weight: 800;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: var(--tile-shadow);
+    font-variant-numeric: tabular-nums;
+    will-change: transform;
+}
+
+#board div:hover:not(.tile-clicked) {
+    background: var(--tile-bg-hover);
+    transform: translateY(-1px);
+}
+
+.tile-clicked {
+    background: var(--tile-revealed) !important;
+    cursor: default !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+    will-change: auto;
+}
+
+.tile-flagged {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.35) 0%, rgba(251, 113, 133, 0.3) 100%) !important;
+    box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.5), var(--tile-shadow) !important;
+}
+
+.tile-mine {
+    background: var(--danger-gradient) !important;
+    animation: explode 0.5s;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4) !important;
+}
+
+@keyframes explode {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.25); }
+}
+
+/* 深色主题下霓虹数字颜色 */
+.x1 { color: #6ea8fe; text-shadow: 0 0 8px rgba(110, 168, 254, 0.45); }
+.x2 { color: #63e6be; text-shadow: 0 0 8px rgba(99, 230, 190, 0.45); }
+.x3 { color: #ff8a80; text-shadow: 0 0 8px rgba(255, 138, 128, 0.45); }
+.x4 { color: #cba6f7; text-shadow: 0 0 8px rgba(203, 166, 247, 0.45); }
+.x5 { color: #ffc87c; text-shadow: 0 0 8px rgba(255, 200, 124, 0.45); }
+.x6 { color: #66d9e8; text-shadow: 0 0 8px rgba(102, 217, 232, 0.45); }
+.x7 { color: #f1f3f9; text-shadow: 0 0 8px rgba(241, 243, 249, 0.45); }
+.x8 { color: #8b95a7; text-shadow: 0 0 8px rgba(139, 149, 167, 0.4); }
+
+/* ==================== Control Panel ==================== */
+.control-panel {
+    max-width: 1200px;
+    margin: 0 auto 2.5rem;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 1.1rem;
+    flex-wrap: wrap;
+}
+
+.control-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.9rem 1.8rem;
+    background: var(--surface);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+    border-radius: 50px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+}
+
+.control-btn:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: var(--shadow-md), var(--glow);
+}
+
+.control-btn.flag.active {
+    background: var(--warn-gradient);
+    color: #1a1a1a;
+    border-color: transparent;
+    box-shadow: var(--shadow-md), 0 0 20px rgba(251, 191, 36, 0.35);
+}
+
+.control-btn.restart:hover {
+    background: linear-gradient(135deg, rgba(108, 140, 255, 0.25), rgba(167, 139, 250, 0.25));
+}
+
+/* ==================== Rules Sidebar ==================== */
+.rules {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 420px;
+    max-width: 92vw;
+    height: 100vh;
+    background: rgba(20, 22, 32, 0.97);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    color: var(--text-primary);
+    padding: 2rem;
+    overflow-y: auto;
+    transform: translateX(-105%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    border-right: 1px solid var(--surface-border);
+    box-shadow: var(--shadow-lg);
+}
+
+.rules.show {
+    transform: translateX(0);
+}
+
+.close-btn {
+    position: absolute;
+    top: 1.2rem;
+    right: 1.2rem;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: var(--text-primary);
+    transform: rotate(90deg);
+}
+
+.rules-content h2 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    background: linear-gradient(135deg, #a5b8ff 0%, #c4b5fd 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.rules-content h2 .icon {
+    -webkit-text-fill-color: initial;
+}
+
+.rule-item {
+    display: flex;
+    gap: 1.1rem;
+    margin-bottom: 1.25rem;
+    padding: 1.3rem 1.4rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+}
+
+.rule-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(4px);
+}
+
+.rule-item > .icon {
+    font-size: 1.8rem;
+    line-height: 1;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 8px rgba(108, 140, 255, 0.35));
+}
+
+.rule-item h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+    color: #a5b8ff;
+}
+
+.rule-item p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0.25rem 0;
+}
+
+/* ==================== Modal ==================== */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--surface-strong);
+    padding: 2.8rem 3rem;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+    max-width: 460px;
+    width: 100%;
+    animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.modal-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--primary-gradient);
+}
+
+.modal-content.lose::before { background: var(--danger-gradient); }
+.modal-content.win::before { background: var(--warn-gradient); }
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-icon {
+    width: 96px;
+    height: 96px;
+    margin: 0 auto 1.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: iconPop 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes iconPop {
+    0% { transform: scale(0.4); opacity: 0; }
+    70% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.modal-icon.lose {
+    background: var(--danger-gradient);
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.4);
+}
+
+.modal-icon.win {
+    background: var(--warn-gradient);
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.4);
+}
+
+.modal-icon .icon {
+    font-size: 2.8rem;
+    line-height: 1;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+}
+
+.modal-title {
+    font-size: 1.9rem;
+    font-weight: 800;
+    margin-bottom: 0.8rem;
+}
+
+.modal-content.lose .modal-title { color: #ff8a80; }
+.modal-content.win .modal-title { color: #ffd24d; }
+
+.modal-message {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.modal-time {
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin-bottom: 1.8rem;
+}
+
+.modal-time span {
+    font-weight: 800;
+    color: var(--accent-1);
+    font-variant-numeric: tabular-nums;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    justify-content: center;
+}
+
+.modal-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.9rem 2rem;
+    border: none;
+    border-radius: 50px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+    background: var(--surface);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+}
+
+.modal-btn.primary {
+    background: var(--primary-gradient);
+    color: #fff;
+    border: none;
+    box-shadow: var(--shadow-md), var(--glow);
+}
+
+.modal-btn:hover {
+    transform: scale(1.06) translateY(-2px);
+    box-shadow: var(--shadow-lg), var(--glow);
+}
+
+/* ==================== Footer hint ==================== */
+.footer-hint {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    padding: 0 1rem 2.5rem;
+    letter-spacing: 0.5px;
+}
+
+/* ==================== Scrollbar ==================== */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* ==================== Responsive Design ==================== */
+@media (max-width: 768px) {
+    .game-header {
+        padding: 1rem;
+    }
+
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .stats-panel {
+        grid-template-columns: 1fr;
+        gap: 0.9rem;
+        padding: 0 1rem;
+        margin: 1.2rem auto;
+    }
+
+    .difficulty-panel {
+        padding: 0 1rem;
+    }
+
+    .difficulty-buttons {
+        flex-direction: column;
+    }
+
+    .difficulty-btn {
+        width: 100%;
+    }
+
+    .game-container {
+        padding: 0 0.5rem;
+        margin-bottom: 1.2rem;
+    }
+
+    #board {
+        padding: 8px;
+        gap: 3px;
+    }
+
+    #board div {
+        width: 32px;
+        height: 32px;
+        font-size: 1.05rem;
+        border-radius: 6px;
+    }
+
+    .control-panel {
+        padding: 0 1rem;
+        flex-direction: column;
+        margin-bottom: 1.5rem;
+    }
+
+    .control-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .rules {
+        width: 100%;
+        max-width: 100vw;
+    }
+
+    .modal-content {
+        margin: 0;
+        padding: 2.2rem 1.5rem;
+    }
+}
+</style>
+</head>
+<body>
+    <!-- Game Header -->
+    <header class="game-header">
+        <div class="header-content">
+            <h1 class="game-title">
+                <span class="icon">💣</span>
+                Minesweeper
+            </h1>
+            <div class="header-actions">
+                <button id="sound-btn" class="rules-btn" aria-label="音效开关" title="音效开关 (M)">
+                    <span class="icon">🔊</span>
+                </button>
+                <button id="rules-btn" class="rules-btn">
+                    <span class="icon">❓</span>
+                    <span>游戏规则</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Game Stats Panel -->
+    <div class="stats-panel">
+        <div class="stat-card">
+            <span class="icon">💣</span>
+            <div class="stat-info">
+                <span class="stat-label">剩余地雷</span>
+                <span class="stat-value" id="mines-count">10</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <span class="icon">⏱️</span>
+            <div class="stat-info">
+                <span class="stat-label">时间</span>
+                <span class="stat-value" id="timer">0s</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <span class="icon">🚩</span>
+            <div class="stat-info">
+                <span class="stat-label">已标记</span>
+                <span class="stat-value" id="flags-count">0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Difficulty Selection -->
+    <div class="difficulty-panel">
+        <h3>选择难度</h3>
+        <div class="difficulty-buttons">
+            <button class="difficulty-btn active" data-difficulty="easy">
+                <span class="icon">🙂</span>
+                <span>简单</span>
+                <small>8×8 / 10雷</small>
+            </button>
+            <button class="difficulty-btn" data-difficulty="medium">
+                <span class="icon">😐</span>
+                <span>中等</span>
+                <small>12×12 / 20雷</small>
+            </button>
+            <button class="difficulty-btn" data-difficulty="hard">
+                <span class="icon">☹️</span>
+                <span>困难</span>
+                <small>16×16 / 40雷</small>
+            </button>
+        </div>
+    </div>
+
+    <!-- Game Board Container -->
+    <div class="game-container">
+        <div id="board"></div>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="control-panel">
+        <button class="control-btn flag" id="flag-button">
+            <span class="icon">🚩</span>
+            <span>标记模式</span>
+        </button>
+
+        <button class="control-btn restart" id="restart-button">
+            <span class="icon">🔄</span>
+            <span>重新开始</span>
+        </button>
+    </div>
+
+    <p class="footer-hint">左键翻开 · 右键插旗 · 移动端长按插旗 · 首次点击永不踩雷 · 按 M 切换音效</p>
+
+    <!-- Rules Sidebar -->
+    <div id="rules" class="rules">
+        <button class="close-btn" id="close-btn">✕</button>
+        <div class="rules-content">
+            <h2><span class="icon">📖</span> 游戏规则</h2>
+            <div class="rule-item">
+                <span class="icon">🖱️</span>
+                <div>
+                    <h3>基本操作</h3>
+                    <p>左键点击翻开方块</p>
+                    <p>右键或标记模式点击插旗</p>
+                </div>
+            </div>
+            <div class="rule-item">
+                <span class="icon">🎯</span>
+                <div>
+                    <h3>游戏目标</h3>
+                    <p>找出所有没有地雷的方块</p>
+                    <p>避免点到地雷</p>
+                </div>
+            </div>
+            <div class="rule-item">
+                <span class="icon">#️⃣</span>
+                <div>
+                    <h3>数字含义</h3>
+                    <p>方块上的数字表示周围8个方块中的地雷数量</p>
+                    <p>利用数字推理地雷位置</p>
+                </div>
+            </div>
+            <div class="rule-item">
+                <span class="icon">🚩</span>
+                <div>
+                    <h3>标记地雷</h3>
+                    <p>在疑似地雷位置插旗标记</p>
+                    <p>帮助记忆和推理</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal" id="gameOverModal">
+        <div class="modal-content lose">
+            <div class="modal-icon lose">
+                <span class="icon">💣</span>
+            </div>
+            <h2 class="modal-title">游戏结束！</h2>
+            <p class="modal-message">不幸踩到地雷了</p>
+            <p class="modal-time">用时：<span id="finalTime">0</span>秒</p>
+            <div class="modal-buttons">
+                <button class="modal-btn primary" id="playAgain">
+                    <span class="icon">▶️</span>
+                    再玩一次
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Victory Modal -->
+    <div class="modal" id="victoryModal">
+        <div class="modal-content win">
+            <div class="modal-icon win">
+                <span class="icon">🏆</span>
+            </div>
+            <h2 class="modal-title">恭喜获胜！</h2>
+            <p class="modal-message">成功找出所有地雷！</p>
+            <p class="modal-time">用时：<span id="victoryTime">0</span>秒</p>
+            <div class="modal-buttons">
+                <button class="modal-btn primary" id="playAgainWin">
+                    <span class="icon">▶️</span>
+                    再玩一次
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ==================== Minesweeper Game - Dark Edition ====================
+// 原始实现来自 GameHub (github.com/SinceraXY/GameHub) 的 Minesweeper，已内联并深色化
+
+// ==================== DOM Elements ====================
+const boardElement = document.getElementById("board");
+const minesCountElement = document.getElementById("mines-count");
+const timerElement = document.getElementById("timer");
+const flagsCountElement = document.getElementById("flags-count");
+const flagButton = document.getElementById("flag-button");
+const restartButton = document.getElementById("restart-button");
+const rulesBtn = document.getElementById("rules-btn");
+const soundBtn = document.getElementById("sound-btn");
+const soundBtnIcon = soundBtn ? soundBtn.querySelector(".icon") : null;
+const closeBtn = document.getElementById("close-btn");
+const rules = document.getElementById("rules");
+const difficultyBtns = document.querySelectorAll(".difficulty-btn");
+const gameOverModal = document.getElementById("gameOverModal");
+const victoryModal = document.getElementById("victoryModal");
+const playAgainBtn = document.getElementById("playAgain");
+const playAgainWinBtn = document.getElementById("playAgainWin");
+const finalTimeElement = document.getElementById("finalTime");
+const victoryTimeElement = document.getElementById("victoryTime");
+
+// ==================== Sound Engine (原生 Web Audio) ====================
+class SoundFX {
+    constructor() {
+        this.ctx = null;
+        this.enabled = true;
+        try {
+            this.enabled = localStorage.getItem("ms_sound") !== "off";
+        } catch (_) {}
+    }
+
+    init() {
+        if (!this.ctx) {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (AC) this.ctx = new AC();
+        }
+        if (this.ctx && this.ctx.state === "suspended") this.ctx.resume();
+        return this.ctx;
+    }
+
+    toggle() {
+        this.enabled = !this.enabled;
+        if (this.enabled) this.init();
+        try {
+            localStorage.setItem("ms_sound", this.enabled ? "on" : "off");
+        } catch (_) {}
+        return this.enabled;
+    }
+
+    // 振荡器音符工具
+    _tone(freq, duration, type = "sine", volume = 0.12, when = 0, slideTo = null) {
+        if (!this.enabled) return;
+        const ctx = this.init();
+        if (!ctx) return;
+        const t = ctx.currentTime + when;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, t);
+        if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t + duration);
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(volume, t + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + duration + 0.05);
+    }
+
+    // 带通噪声工具（爆破/摩擦声）
+    _noise(duration, volume = 0.1, filterFreq = 3000, when = 0) {
+        if (!this.enabled) return;
+        const ctx = this.init();
+        if (!ctx) return;
+        const t = ctx.currentTime + when;
+        const len = Math.max(1, Math.floor(ctx.sampleRate * duration));
+        const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < len; i++) {
+            data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+        }
+        const src = ctx.createBufferSource();
+        src.buffer = buffer;
+        const filter = ctx.createBiquadFilter();
+        filter.type = "bandpass";
+        filter.frequency.value = filterFreq;
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(volume, t);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+        src.connect(filter).connect(gain).connect(ctx.destination);
+        src.start(t);
+    }
+
+    // 翻格：数字越大音高越高（危险听觉暗示）
+    reveal(n) {
+        this._tone(420 + n * 55, 0.07, "sine", 0.12);
+    }
+
+    // 连锁翻开：单次快速上滑音
+    cascade(count) {
+        const end = Math.min(660 + count * 20, 990);
+        this._tone(330, 0.12, "triangle", 0.1, 0, end);
+    }
+
+    // 插旗上行 / 拔旗下行
+    flag(on) {
+        if (on) {
+            this._tone(523.25, 0.07, "triangle", 0.12);
+            this._tone(783.99, 0.09, "triangle", 0.12, 0.07);
+        } else {
+            this._tone(783.99, 0.07, "triangle", 0.1);
+            this._tone(523.25, 0.09, "triangle", 0.1, 0.07);
+        }
+    }
+
+    // 主爆炸：低频下扫 + 噪声爆发
+    explosion() {
+        this._tone(180, 0.5, "sawtooth", 0.15, 0, 40);
+        this._noise(0.45, 0.18, 900);
+        this._noise(0.3, 0.1, 400, 0.1);
+    }
+
+    // 连环闷爆：按 30ms 错开（限流 40 声防爆音）
+    rumble(count) {
+        const n = Math.min(count, 40);
+        for (let i = 0; i < n; i++) {
+            this._noise(0.12, 0.08, 500 + Math.random() * 600, i * 0.03);
+        }
+    }
+
+    // 胜利琶音 + 高音闪烁
+    victory() {
+        const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5];
+        notes.forEach((f, i) => this._tone(f, 0.14, "triangle", 0.13, i * 0.09));
+        this._tone(2093, 0.35, "sine", 0.06, notes.length * 0.09);
+    }
+
+    // UI 点击
+    click() {
+        this._tone(1200, 0.03, "square", 0.05);
+    }
+}
+
+const sfx = new SoundFX();
+
+// ==================== Game Configuration ====================
+const DIFFICULTIES = {
+    easy: { rows: 8, columns: 8, mines: 10 },
+    medium: { rows: 12, columns: 12, mines: 20 },
+    hard: { rows: 16, columns: 16, mines: 40 }
+};
+
+// ==================== Game State ====================
+const gameState = {
+    board: [],
+    rows: 8,
+    columns: 8,
+    minesCount: 10,
+    mineGrid: [],
+    tilesClicked: 0,
+    flagsPlaced: 0,
+    flagEnabled: false,
+    gameOver: false,
+    gameStarted: false,
+    difficulty: 'easy',
+    startTime: null,
+    timerInterval: null,
+    elapsedTime: 0,
+    longPressTimer: null,
+    longPressTriggered: false,
+};
+
+// 连环引爆错峰计时器（重开时清理，防止泄漏到新棋盘）
+let mineRevealTimers = [];
+
+// ==================== Sound Toggle Helper ====================
+function updateSoundIcon(enabled) {
+    if (soundBtnIcon) soundBtnIcon.textContent = enabled ? "🔊" : "🔇";
+}
+
+// ==================== Initialize ====================
+window.onload = function() {
+    updateSoundIcon(sfx.enabled);
+    setupEventListeners();
+    startGame();
+
+    // 首次任意交互解锁音频上下文（浏览器自动播放策略）
+    const unlockAudio = () => {
+        sfx.init();
+        document.removeEventListener("pointerdown", unlockAudio);
+        document.removeEventListener("keydown", unlockAudio);
+    };
+    document.addEventListener("pointerdown", unlockAudio);
+    document.addEventListener("keydown", unlockAudio);
+};
+
+function setupEventListeners() {
+    flagButton.addEventListener("click", () => {
+        sfx.click();
+        toggleFlag();
+    });
+    restartButton.addEventListener("click", () => {
+        sfx.click();
+        restartGame();
+    });
+    rulesBtn.addEventListener("click", () => rules.classList.add("show"));
+    closeBtn.addEventListener("click", () => rules.classList.remove("show"));
+    playAgainBtn.addEventListener("click", () => {
+        sfx.click();
+        gameOverModal.classList.remove("active");
+        restartGame();
+    });
+    playAgainWinBtn.addEventListener("click", () => {
+        sfx.click();
+        victoryModal.classList.remove("active");
+        restartGame();
+    });
+
+    // 音效开关按钮
+    soundBtn.addEventListener("click", () => {
+        updateSoundIcon(sfx.toggle());
+    });
+
+    // M 键快捷切换音效（弹窗打开时不触发）
+    document.addEventListener("keydown", (e) => {
+        if (e.key.toLowerCase() !== "m") return;
+        if (gameOverModal.classList.contains("active") ||
+            victoryModal.classList.contains("active")) return;
+        updateSoundIcon(sfx.toggle());
+    });
+
+    difficultyBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            sfx.click();
+            changeDifficulty(btn.dataset.difficulty);
+        });
+    });
+
+    // 事件委托：仅在 board 容器上绑定一次，处理所有格子的点击与右键
+    boardElement.addEventListener("click", (e) => {
+        const tile = e.target.closest("#board div");
+        if (tile) handleTileClick(tile, false);
+    });
+
+    boardElement.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        const tile = e.target.closest("#board div");
+        if (tile) handleTileClick(tile, true);
+    });
+
+    // 移动端长按插旗
+    boardElement.addEventListener("touchstart", (e) => {
+        const tile = e.target.closest("#board div");
+        if (!tile || gameState.gameOver || tile.classList.contains("tile-clicked")) return;
+        gameState.longPressTriggered = false;
+        gameState.longPressTimer = setTimeout(() => {
+            gameState.longPressTriggered = true;
+            toggleTileFlag(tile);
+            // 震动反馈（如果设备支持）
+            if (navigator.vibrate) navigator.vibrate(30);
+        }, 400);
+    }, { passive: true });
+
+    boardElement.addEventListener("touchend", (e) => {
+        clearTimeout(gameState.longPressTimer);
+        if (gameState.longPressTriggered) {
+            e.preventDefault();
+            gameState.longPressTriggered = false;
+        }
+    });
+
+    boardElement.addEventListener("touchmove", () => {
+        clearTimeout(gameState.longPressTimer);
+    }, { passive: true });
+}
+
+// ==================== Difficulty Management ====================
+function changeDifficulty(difficulty) {
+    gameState.difficulty = difficulty;
+    const config = DIFFICULTIES[difficulty];
+    gameState.rows = config.rows;
+    gameState.columns = config.columns;
+    gameState.minesCount = config.mines;
+
+    difficultyBtns.forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.difficulty === difficulty);
+    });
+
+    restartGame();
+}
+
+// ==================== Game Initialization ====================
+function startGame() {
+    // 清理未完成的连环引爆演出
+    mineRevealTimers.forEach(clearTimeout);
+    mineRevealTimers = [];
+
+    gameState.board = [];
+    gameState.mineGrid = [];
+    gameState.tilesClicked = 0;
+    gameState.flagsPlaced = 0;
+    gameState.gameOver = false;
+    gameState.gameStarted = false;
+    gameState.elapsedTime = 0;
+
+    // 重置标记模式
+    gameState.flagEnabled = false;
+    flagButton.classList.remove("active");
+
+    if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+        gameState.timerInterval = null;
+    }
+
+    minesCountElement.textContent = gameState.minesCount;
+    flagsCountElement.textContent = "0";
+    timerElement.textContent = "0s";
+
+    // 首点保护：第一次点击前不生成地雷
+    createBoard();
+}
+
+function setMines(excludeR = -1, excludeC = -1) {
+    // 初始化二维地雷网格
+    gameState.mineGrid = Array.from({ length: gameState.rows }, () =>
+        Array(gameState.columns).fill(false)
+    );
+
+    // 构建排除区域（首点击周围3x3）
+    const excluded = Array.from({ length: gameState.rows }, () =>
+        Array(gameState.columns).fill(false)
+    );
+    if (excludeR >= 0) {
+        for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+                const nr = excludeR + dr;
+                const nc = excludeC + dc;
+                if (nr >= 0 && nr < gameState.rows && nc >= 0 && nc < gameState.columns) {
+                    excluded[nr][nc] = true;
+                }
+            }
+        }
+    }
+
+    let minesLeft = gameState.minesCount;
+    while (minesLeft > 0) {
+        const r = Math.floor(Math.random() * gameState.rows);
+        const c = Math.floor(Math.random() * gameState.columns);
+        if (!gameState.mineGrid[r][c] && !excluded[r][c]) {
+            gameState.mineGrid[r][c] = true;
+            minesLeft--;
+        }
+    }
+}
+
+function createBoard() {
+    boardElement.textContent = "";
+    boardElement.style.gridTemplateColumns = `repeat(${gameState.columns}, 1fr)`;
+    boardElement.setAttribute("role", "grid");
+    boardElement.setAttribute("aria-label", "扫雷棋盘");
+
+    for (let r = 0; r < gameState.rows; r++) {
+        const row = [];
+        for (let c = 0; c < gameState.columns; c++) {
+            const tile = document.createElement("div");
+            tile.id = `${r}-${c}`;
+            tile.setAttribute("role", "button");
+            tile.setAttribute("tabindex", "0");
+            tile.setAttribute("aria-label", `第${r + 1}行第${c + 1}列，未翻开`);
+            boardElement.appendChild(tile);
+            row.push(tile);
+        }
+        gameState.board.push(row);
+    }
+}
+
+// ==================== Timer Management ====================
+function startTimer() {
+    if (gameState.timerInterval) return;
+
+    gameState.startTime = Date.now();
+    gameState.timerInterval = setInterval(() => {
+        gameState.elapsedTime = Math.floor((Date.now() - gameState.startTime) / 1000);
+        timerElement.textContent = `${gameState.elapsedTime}s`;
+    }, 1000);
+}
+
+function stopTimer() {
+    if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+        gameState.timerInterval = null;
+    }
+}
+
+// ==================== Tile Interaction ====================
+function handleTileClick(tile, isRightClick) {
+    if (gameState.gameOver || tile.classList.contains("tile-clicked")) {
+        return;
+    }
+
+    // 长按已处理，跳过本次点击
+    if (gameState.longPressTriggered) {
+        gameState.longPressTriggered = false;
+        return;
+    }
+
+    if (isRightClick || gameState.flagEnabled) {
+        toggleTileFlag(tile);
+        return;
+    }
+
+    if (!gameState.gameStarted) {
+        gameState.gameStarted = true;
+        const [r, c] = tile.id.split("-").map(Number);
+        setMines(r, c);
+        startTimer();
+    }
+
+    const [cr, cc] = tile.id.split("-").map(Number);
+    if (gameState.mineGrid[cr][cc]) {
+        gameOver(false);
+        return;
+    }
+
+    const coords = tile.id.split("-");
+    const r = parseInt(coords[0]);
+    const c = parseInt(coords[1]);
+    const before = gameState.tilesClicked;
+    revealTile(r, c);
+
+    // 翻格音效：单格按数字变调，连锁只播一次上滑音
+    const revealed = gameState.tilesClicked - before;
+    if (revealed === 1) {
+        sfx.reveal(parseInt(gameState.board[r][c].textContent) || 0);
+    } else if (revealed > 1) {
+        sfx.cascade(revealed);
+    }
+}
+
+function toggleTileFlag(tile) {
+    const [r, c] = tile.id.split("-").map(Number);
+    if (tile.classList.contains("tile-flagged")) {
+        tile.classList.remove("tile-flagged");
+        tile.textContent = "";
+        tile.setAttribute("aria-label", `第${r + 1}行第${c + 1}列，未翻开`);
+        gameState.flagsPlaced--;
+        sfx.flag(false);
+    } else {
+        tile.classList.add("tile-flagged");
+        tile.textContent = "🚩";
+        tile.setAttribute("aria-label", `第${r + 1}行第${c + 1}列，已标记地雷`);
+        gameState.flagsPlaced++;
+        sfx.flag(true);
+    }
+
+    flagsCountElement.textContent = gameState.flagsPlaced;
+    const remainingMines = gameState.minesCount - gameState.flagsPlaced;
+    minesCountElement.textContent = Math.max(0, remainingMines);
+}
+
+function toggleFlag() {
+    gameState.flagEnabled = !gameState.flagEnabled;
+    flagButton.classList.toggle("active", gameState.flagEnabled);
+}
+
+// ==================== Tile Revealing ====================
+function revealTile(r, c) {
+    if (r < 0 || r >= gameState.rows || c < 0 || c >= gameState.columns) {
+        return;
+    }
+
+    const start = gameState.board[r][c];
+    if (start.classList.contains("tile-clicked") || start.classList.contains("tile-flagged")) {
+        return;
+    }
+
+    // 迭代 DFS：收集并翻开格子，避免深递归栈溢出
+    const queue = [[r, c]];
+
+    while (queue.length) {
+        const [qr, qc] = queue.pop();
+        if (qr < 0 || qr >= gameState.rows || qc < 0 || qc >= gameState.columns) continue;
+
+        const tile = gameState.board[qr][qc];
+        if (tile.classList.contains("tile-clicked") || tile.classList.contains("tile-flagged")) continue;
+
+        tile.classList.add("tile-clicked");
+        gameState.tilesClicked++;
+
+        const minesFound = countAdjacentMines(qr, qc);
+        if (minesFound > 0) {
+            tile.textContent = minesFound;
+            tile.classList.add(`x${minesFound}`);
+            tile.setAttribute("aria-label", `第${qr + 1}行第${qc + 1}列，${minesFound}个地雷`);
+        } else {
+            tile.setAttribute("aria-label", `第${qr + 1}行第${qc + 1}列，安全`);
+            queue.push([qr - 1, qc - 1], [qr - 1, qc], [qr - 1, qc + 1],
+                       [qr, qc - 1], [qr, qc + 1],
+                       [qr + 1, qc - 1], [qr + 1, qc], [qr + 1, qc + 1]);
+        }
+    }
+
+    if (gameState.tilesClicked === gameState.rows * gameState.columns - gameState.minesCount) {
+        gameOver(true);
+    }
+}
+
+function countAdjacentMines(r, c) {
+    let count = 0;
+    for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = r + dr;
+            const nc = c + dc;
+            if (nr >= 0 && nr < gameState.rows && nc >= 0 && nc < gameState.columns) {
+                if (gameState.mineGrid[nr][nc]) count++;
+            }
+        }
+    }
+    return count;
+}
+
+// ==================== Game Over ====================
+function gameOver(victory) {
+    gameState.gameOver = true;
+    stopTimer();
+
+    if (victory) {
+        sfx.victory();
+        victoryTimeElement.textContent = gameState.elapsedTime;
+        victoryModal.classList.add("active");
+    } else {
+        sfx.explosion();
+        revealAllMines();
+        finalTimeElement.textContent = gameState.elapsedTime;
+        gameOverModal.classList.add("active");
+    }
+}
+
+function revealAllMines() {
+    // 收集所有地雷坐标
+    const mineCoords = [];
+    for (let r = 0; r < gameState.rows; r++) {
+        for (let c = 0; c < gameState.columns; c++) {
+            if (gameState.mineGrid[r][c]) {
+                mineCoords.push(gameState.board[r][c]);
+            }
+        }
+    }
+
+    // 连环闷爆音效（一次调度，30ms 错开）
+    sfx.rumble(mineCoords.length);
+
+    // 音画同步：地雷逐个引爆，30ms 间隔
+    mineCoords.forEach((tile, i) => {
+        mineRevealTimers.push(setTimeout(() => {
+            tile.classList.add("tile-mine");
+            tile.textContent = "💣";
+        }, 30 * i));
+    });
+}
+
+// ==================== Game Controls ====================
+function restartGame() {
+    gameOverModal.classList.remove("active");
+    victoryModal.classList.remove("active");
+    startGame();
+}
+
+// ==================== Start Game ====================
+</script>
+</body>
+</html>

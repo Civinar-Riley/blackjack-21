@@ -1,0 +1,2219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🏇 赛马场</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #0d0f14;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px;
+        }
+
+        .layout-wrapper {
+            display: flex;
+            gap: 16px;
+            width: 100%;
+            max-width: 1200px;
+            align-items: flex-start;
+        }
+        .side-panel {
+            width: 220px;
+            min-width: 180px;
+            flex-shrink: 0;
+            background: rgba(15, 20, 30, 0.95);
+            border: 1px solid rgba(255, 215, 0, 0.15);
+            border-radius: 20px;
+            padding: 16px 14px;
+            max-height: 700px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,215,0,0.25) transparent;
+        }
+        .side-panel::-webkit-scrollbar { width: 5px; }
+        .side-panel::-webkit-scrollbar-track { background: transparent; }
+        .side-panel::-webkit-scrollbar-thumb { background: rgba(255,215,0,0.25); border-radius: 4px; }
+        .side-panel-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #ffd700;
+            text-align: center;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+            letter-spacing: 2px;
+        }
+        .side-panel-left { order: -1; }
+        .side-panel-right { order: 1; }
+
+        .game-container {
+            flex: 1;
+            min-width: 0;
+            max-width: 760px;
+            background: radial-gradient(ellipse at center, #1a1d26 0%, #0f1118 100%);
+            border-radius: 40px;
+            padding: 24px 22px 28px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.85), inset 0 1px 4px rgba(255,215,0,0.2);
+            border: 2px solid #b8860b;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .game-container::before {
+            content: '';
+            position: absolute;
+            inset: 8px;
+            border-radius: 32px;
+            background: repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(255,215,0,0.015) 40px, rgba(255,215,0,0.015) 41px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            position: relative;
+            z-index: 1;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #f5e7b0;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.7), 0 0 20px rgba(184,134,11,0.3);
+            letter-spacing: 2px;
+        }
+        .title span { color: #ffd700; }
+
+        .header-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .score-board {
+            display: flex;
+            gap: 14px;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 16px 5px 14px;
+            border-radius: 40px;
+            border: 1px solid rgba(255,215,0,0.25);
+            backdrop-filter: blur(4px);
+        }
+        .score-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+            color: #d4c9a8;
+        }
+        .score-item .num {
+            font-weight: 700;
+            font-size: 18px;
+            color: #ffd700;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .chip-display {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 14px 5px 12px;
+            border-radius: 40px;
+            border: 1px solid rgba(255,215,0,0.25);
+            backdrop-filter: blur(4px);
+            font-size: 15px;
+            color: #d4c9a8;
+        }
+        .chip-display .chip-icon { font-size: 18px; }
+        .chip-display .chip-amount {
+            font-weight: 700;
+            font-size: 18px;
+            color: #ffd700;
+            min-width: 50px;
+            text-align: right;
+        }
+        .chip-display .chip-amount.pulse { animation: chipPulse 0.4s ease; }
+        @keyframes chipPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.25); color: #fff3c0; }
+            100% { transform: scale(1); }
+        }
+
+        .betting-area {
+            position: relative;
+            z-index: 1;
+            background: rgba(0,0,0,0.35);
+            border-radius: 20px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255,215,0,0.1);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+        .betting-area.hidden { display: none; }
+
+        .bet-label {
+            font-size: 15px;
+            font-weight: 600;
+            color: #d4c9a8;
+            white-space: nowrap;
+        }
+
+        .bet-chips {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .bet-chip-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,215,0,0.3);
+            background: radial-gradient(circle at 35% 35%, #f5e7b0, #b8860b);
+            color: #1a1a1a;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .bet-chip-btn:hover:not(:disabled) {
+            transform: scale(1.12);
+            box-shadow: 0 4px 16px rgba(255,215,0,0.3);
+        }
+        .bet-chip-btn:active:not(:disabled) { transform: scale(0.95); }
+        .bet-chip-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .bet-chip-btn.chip-allin {
+            width: 52px;
+            border-radius: 20px;
+            background: radial-gradient(circle at 35% 35%, #d0b0e0, #5a3a7a);
+            color: #f5e8ff;
+            font-size: 12px;
+        }
+
+        .bet-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-left: auto;
+        }
+        .bet-current {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffd700;
+            min-width: 60px;
+            justify-content: flex-end;
+        }
+        .bet-current .label { font-size: 13px; color: #b8ad8a; font-weight: 400; }
+
+        .btn-bet-start {
+            padding: 8px 24px;
+            font-size: 15px;
+            font-weight: 700;
+            border: none;
+            border-radius: 60px;
+            cursor: pointer;
+            background: linear-gradient(145deg, #1a6b3a, #0f4526);
+            color: #e8f5e9;
+            border: 1px solid #2e7d5a55;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-bet-start:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(26,107,58,0.35);
+        }
+        .btn-bet-start:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-bet-rebet, .btn-bet-clear {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-bet-rebet {
+            background: linear-gradient(145deg, #1a6b3a, #0f4526);
+            color: #e8f5e9;
+            border: 1px solid #2e7d5a55;
+        }
+        .btn-bet-rebet:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(26,107,58,0.35); }
+        .btn-bet-rebet:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; }
+        .btn-bet-clear {
+            background: #3a2a2a;
+            color: #d4a8a8;
+            border: 1px solid rgba(255,107,107,0.25);
+        }
+        .btn-bet-clear:hover:not(:disabled) { transform: translateY(-2px); color: #ff6b6b; }
+        .btn-bet-clear:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; }
+
+        .btn-rebuy {
+            background: linear-gradient(145deg, #7a5a2a, #5a3a0a);
+            color: #ffe8b0;
+            border-color: #b8860b88;
+        }
+        .btn-rebuy:hover:not(:disabled) { background: linear-gradient(145deg, #9a7a3a, #7a5a1a); box-shadow: 0 8px 28px rgba(184,134,11,0.35); }
+        .btn-rebuy.hidden-btn { display: none; }
+
+        .track {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .lane {
+            display: grid;
+            grid-template-columns: 158px 1fr;
+            gap: 10px;
+            align-items: center;
+            background: rgba(0,0,0,0.28);
+            border: 1px solid rgba(255,215,0,0.08);
+            border-radius: 14px;
+            padding: 6px 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .track.locked .lane { cursor: default; }
+        .lane.staked { border-color: rgba(255,215,0,0.3); }
+        .lane:hover { background: rgba(0,0,0,0.42); border-color: rgba(255,215,0,0.2); }
+        .lane.selected {
+            background: rgba(255,215,0,0.07);
+            border-color: #ffd700;
+            box-shadow: 0 0 18px rgba(255,215,0,0.18);
+        }
+        .track.locked .lane:hover { background: rgba(0,0,0,0.28); border-color: rgba(255,215,0,0.08); }
+        .track.locked .lane.selected { background: rgba(255,215,0,0.07); border-color: #ffd700; }
+
+        .lane-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+        .lane-num {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #f5e7b0, #b8860b);
+            color: #1a1a1a;
+            font-weight: 700;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .lane-meta { min-width: 0; flex: 1; }
+        .lane-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #f5e7b0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .hot-tag {
+            font-size: 10px;
+            color: #ffd700;
+            border: 1px solid #ffd70088;
+            border-radius: 8px;
+            padding: 0 5px;
+            margin-left: 3px;
+        }
+        .lane-style { margin-top: 1px; }
+        .style-tag {
+            font-size: 10px;
+            border-radius: 8px;
+            padding: 0 6px;
+            line-height: 15px;
+            display: inline-block;
+        }
+        .style-tag.front { background: rgba(255,107,107,0.15); color: #ff9a9a; border: 1px solid rgba(255,107,107,0.3); }
+        .style-tag.steady { background: rgba(100,160,255,0.12); color: #9ec1ff; border: 1px solid rgba(100,160,255,0.3); }
+        .style-tag.closer { background: rgba(190,120,255,0.12); color: #cf9aff; border: 1px solid rgba(190,120,255,0.3); }
+        .lane-odds {
+            font-size: 17px;
+            font-weight: 700;
+            color: #ffd700;
+            flex-shrink: 0;
+        }
+
+        .lane-track {
+            position: relative;
+            height: 54px;
+            background: repeating-linear-gradient(90deg, #17251b 0 44px, #1b2d21 44px 88px);
+            border-radius: 9px;
+            border: 1px solid rgba(255,215,0,0.07);
+        }
+        .lane-track::after {
+            content: '';
+            position: absolute;
+            left: 0; right: 0; top: 50%;
+            border-top: 1px dashed rgba(255,255,255,0.07);
+            pointer-events: none;
+        }
+        .finish-line {
+            position: absolute;
+            right: 34px;
+            top: 4px;
+            bottom: 4px;
+            width: 12px;
+            background: repeating-conic-gradient(#e8e8e8 0% 25%, #2a2a2a 0% 50%) 0 0/8px 8px;
+            border-radius: 2px;
+            opacity: 0.9;
+            z-index: 1;
+        }
+        .finish-line.flash {
+            animation: finishFlash 1s ease;
+        }
+        @keyframes finishFlash {
+            0%, 100% { box-shadow: none; }
+            25%, 65% { box-shadow: 0 0 20px 5px rgba(255,215,0,0.85); opacity: 1; }
+        }
+
+        .horse {
+            position: absolute;
+            left: 4px;
+            top: 50%;
+            margin-top: -16px;
+            font-size: 30px;
+            line-height: 1;
+            z-index: 2;
+            will-change: transform;
+        }
+        .horse-emoji { display: inline-block; }
+        .track.racing .horse-emoji { animation: gallop 0.28s ease-in-out infinite; }
+        @keyframes gallop {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            30% { transform: translateY(-5px) rotate(-5deg); }
+            60% { transform: translateY(1px) rotate(3deg); }
+        }
+        .name-tag {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #d4c9a8;
+            background: rgba(0,0,0,0.55);
+            padding: 1px 6px;
+            border-radius: 8px;
+            white-space: nowrap;
+            border: 1px solid rgba(255,215,0,0.12);
+        }
+        .rank-badge {
+            position: absolute;
+            top: -11px;
+            right: -9px;
+            width: 19px;
+            height: 19px;
+            border-radius: 50%;
+            background: #3a3a3a;
+            color: #ccc;
+            font-size: 11px;
+            font-weight: 700;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255,255,255,0.25);
+        }
+        .track.racing .rank-badge, .track.finished .rank-badge { display: flex; }
+        .rank-badge.first { background: #ffd700; color: #1a1a1a; border-color: #fff3c0; box-shadow: 0 0 10px rgba(255,215,0,0.6); }
+        .bet-bubble {
+            position: absolute;
+            top: -33px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(145deg, #f5e7b0, #b8860b);
+            color: #1a1a1a;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: none;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            z-index: 3;
+        }
+        .bet-bubble.show { display: block; }
+        .bet-bubble .bb-x {
+            margin-left: 5px;
+            cursor: pointer;
+            opacity: 0.55;
+            font-size: 10px;
+            padding: 1px 2px;
+        }
+        .bet-bubble .bb-x:hover { opacity: 1; }
+
+        .message-area {
+            text-align: center;
+            padding: 6px 0 4px;
+            min-height: 44px;
+            position: relative;
+            z-index: 1;
+        }
+        .message {
+            font-size: 18px;
+            font-weight: 700;
+            color: #f5e7b0;
+            text-shadow: 0 2px 12px rgba(0,0,0,0.7);
+            letter-spacing: 0.5px;
+            padding: 4px 16px;
+            display: inline-block;
+            border-radius: 40px;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,215,0,0.1);
+            transition: all 0.3s;
+        }
+        .message.win { color: #5dff7a; border-color: #5dff7a55; background: rgba(0,40,0,0.4); }
+        .message.lose { color: #ff6b6b; border-color: #ff6b6b55; background: rgba(40,0,0,0.4); }
+        .message.photo { color: #ffd700; border-color: #ffd700; background: rgba(40,30,0,0.5); box-shadow: 0 0 30px rgba(255,215,0,0.15); }
+        .message.pop { animation: msgPop 0.4s ease; }
+        @keyframes msgPop {
+            0% { transform: scale(0.8); opacity: 0; }
+            60% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .side-stats-grid { display: flex; flex-direction: column; gap: 6px; }
+        .side-stats-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            border: 1px solid rgba(255,215,0,0.06);
+        }
+        .side-stats-item .stat-label { font-size: 12px; color: #b8ad8a; }
+        .side-stats-item .stat-value { font-size: 15px; font-weight: 700; color: #f5e7b0; }
+        .side-stats-item .stat-value.gold { color: #ffd700; }
+        .side-stats-item .stat-value.green { color: #5dff7a; }
+        .side-stats-item .stat-value.red { color: #ff6b6b; }
+
+        .side-ach-list { display: flex; flex-direction: column; gap: 5px; }
+        .side-ach-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 8px;
+            background: rgba(0,0,0,0.25);
+            border-radius: 8px;
+            border: 1px solid rgba(255,215,0,0.05);
+            transition: background 0.2s;
+        }
+        .side-ach-item:hover { background: rgba(0,0,0,0.4); }
+        .side-ach-item.locked { opacity: 0.35; filter: grayscale(0.7); }
+        .side-ach-item .ach-icon { font-size: 20px; flex-shrink: 0; }
+        .side-ach-item .ach-info { flex: 1; min-width: 0; }
+        .side-ach-item .ach-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #f5e7b0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .side-ach-item .ach-desc {
+            font-size: 10px;
+            color: #8a8a6a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .side-ach-item .ach-check { font-size: 12px; flex-shrink: 0; }
+
+        .achievement-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: linear-gradient(145deg, #2a2a1a, #1a1a0a);
+            border: 2px solid #ffd700;
+            border-radius: 16px;
+            padding: 12px 24px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.8), 0 0 40px rgba(255,215,0,0.15);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+        }
+        .achievement-toast.show { transform: translateX(-50%) translateY(0); }
+        .achievement-toast .ach-icon { font-size: 36px; }
+        .achievement-toast .ach-text { color: #f5e7b0; }
+        .achievement-toast .ach-text .ach-title { font-size: 16px; font-weight: 700; color: #ffd700; }
+        .achievement-toast .ach-text .ach-desc { font-size: 13px; color: #b8ad8a; }
+
+        .countdown-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 500;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        }
+        .countdown-overlay.show { display: flex; }
+        .countdown-num {
+            font-size: 140px;
+            font-weight: 900;
+            color: #ffd700;
+            text-shadow: 0 6px 40px rgba(0,0,0,0.9), 0 0 60px rgba(255,215,0,0.4);
+        }
+        .countdown-num.pop { animation: cdPop 0.55s ease; }
+        @keyframes cdPop {
+            0% { transform: scale(2.2); opacity: 0; }
+            40% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-panel {
+            background: radial-gradient(ellipse at center, #1e222e, #101218);
+            border: 2px solid #b8860b;
+            border-radius: 24px;
+            padding: 28px 32px;
+            max-width: 460px;
+            width: 100%;
+            max-height: 84vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+            position: relative;
+        }
+        .modal-panel h2 {
+            color: #ffd700;
+            font-size: 22px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .stats-item {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 10px 14px;
+            border: 1px solid rgba(255,215,0,0.08);
+        }
+        .stats-item .stat-label { font-size: 12px; color: #b8ad8a; }
+        .stats-item .stat-value { font-size: 20px; font-weight: 700; color: #f5e7b0; }
+        .stats-item .stat-value.gold { color: #ffd700; }
+        .stats-item .stat-value.green { color: #5dff7a; }
+        .stats-item .stat-value.red { color: #ff6b6b; }
+
+        .achievements-section h3 {
+            color: #f5e7b0;
+            font-size: 16px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(255,215,0,0.1);
+            padding-bottom: 6px;
+        }
+        .ach-list { display: flex; flex-direction: column; gap: 6px; }
+        .ach-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            border: 1px solid rgba(255,215,0,0.05);
+        }
+        .ach-item.locked { opacity: 0.4; filter: grayscale(0.8); }
+        .ach-item .ach-icon { font-size: 24px; }
+        .ach-item .ach-info { flex: 1; }
+        .ach-item .ach-info .ach-name { font-size: 14px; font-weight: 600; color: #f5e7b0; }
+        .ach-item .ach-info .ach-desc { font-size: 12px; color: #8a8a6a; }
+        .ach-item .ach-status { font-size: 12px; color: #6a8a6a; }
+
+        .btn-close-modal {
+            display: block;
+            margin: 16px auto 0;
+            padding: 10px 32px;
+            font-size: 15px;
+            font-weight: 700;
+            border: none;
+            border-radius: 60px;
+            cursor: pointer;
+            background: #2d2a1e;
+            color: #c4b998;
+            border: 1px solid rgba(255,215,0,0.15);
+            transition: all 0.2s;
+        }
+        .btn-close-modal:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+
+        .result-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+        .result-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.28);
+            border-radius: 10px;
+            border: 1px solid rgba(255,215,0,0.06);
+            font-size: 14px;
+            color: #d4c9a8;
+        }
+        .result-row .r-medal { font-size: 20px; width: 28px; text-align: center; flex-shrink: 0; }
+        .result-row .r-num { font-weight: 700; color: #f5e7b0; flex-shrink: 0; }
+        .result-row .r-name { font-weight: 700; color: #f5e7b0; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .result-row .r-odds { color: #ffd700; font-weight: 700; flex-shrink: 0; }
+        .result-row .r-time { color: #8a8a6a; font-size: 12px; flex-shrink: 0; }
+        .result-row.mine { border-color: #ffd700; background: rgba(255,215,0,0.08); box-shadow: 0 0 14px rgba(255,215,0,0.12); }
+        .mine-tag {
+            font-size: 10px;
+            background: #ffd700;
+            color: #1a1a1a;
+            font-weight: 700;
+            border-radius: 8px;
+            padding: 1px 6px;
+            flex-shrink: 0;
+        }
+        .result-photo {
+            text-align: center;
+            color: #ffd700;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            min-height: 20px;
+        }
+        .result-payout {
+            text-align: center;
+            font-size: 19px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            padding: 8px;
+            border-radius: 12px;
+            background: rgba(0,0,0,0.3);
+        }
+        .result-payout.win { color: #5dff7a; }
+        .result-payout.lose { color: #ff6b6b; }
+        .btn-next {
+            display: block;
+            margin: 0 auto;
+            padding: 12px 40px;
+            font-size: 16px;
+            font-weight: 700;
+            border: none;
+            border-radius: 60px;
+            cursor: pointer;
+            background: linear-gradient(145deg, #1a6b3a, #0f4526);
+            color: #e8f5e9;
+            border: 1px solid #2e7d5a55;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            transition: all 0.2s;
+        }
+        .btn-next:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,107,58,0.35); }
+
+        .help-content { margin-bottom: 16px; }
+        .help-section { margin-bottom: 14px; }
+        .help-section h3 {
+            color: #ffd700;
+            font-size: 15px;
+            margin-bottom: 6px;
+            border-bottom: 1px solid rgba(255,215,0,0.1);
+            padding-bottom: 4px;
+        }
+        .help-section p { color: #d4c9a8; font-size: 13px; line-height: 1.5; margin: 0; }
+        .help-section ul { color: #d4c9a8; font-size: 13px; line-height: 1.6; margin: 0; padding-left: 20px; }
+        .help-section li { margin-bottom: 2px; }
+        .help-section strong { color: #f5e7b0; }
+
+        .btn-reborn {
+            background: none;
+            border: none;
+            color: #6a4a4a;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px;
+            transition: all 0.3s;
+            position: relative;
+        }
+        .btn-reborn:hover { color: #ff4444; transform: scale(1.2); }
+        .btn-reborn::after {
+            content: '失去所有，重来一次';
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a2e;
+            color: #ff6b6b;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            border: 1px solid #ff6b6b44;
+        }
+        .btn-reborn:hover::after { opacity: 1; }
+
+        .reborn-panel {
+            background: radial-gradient(ellipse at center, #2a1a1a, #1a0a0a);
+            border: 2px solid #8b0000;
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 360px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(139,0,0,0.5);
+            position: relative;
+        }
+        .reborn-icon { font-size: 60px; margin-bottom: 12px; animation: rebornPulse 2s infinite; }
+        @keyframes rebornPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .reborn-panel h2 { color: #ff6b6b; font-size: 20px; margin-bottom: 8px; }
+        .reborn-desc { color: #d4a8a8; font-size: 13px; margin-bottom: 16px; }
+        .reborn-progress { display: flex; justify-content: center; gap: 12px; margin-bottom: 12px; }
+        .reborn-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #3a2a2a;
+            border: 2px solid #6a4a4a;
+            transition: all 0.3s;
+        }
+        .reborn-dot.active { background: #ff4444; border-color: #ff6b6b; box-shadow: 0 0 12px rgba(255,68,68,0.5); }
+        .reborn-hint { color: #8a6a6a; font-size: 12px; margin-bottom: 16px; min-height: 18px; }
+        .btn-reborn-confirm {
+            padding: 12px 32px;
+            font-size: 16px;
+            font-weight: 700;
+            border: none;
+            border-radius: 60px;
+            cursor: pointer;
+            background: linear-gradient(145deg, #8b0000, #660000);
+            color: #ffcccc;
+            border: 1px solid #aa2222;
+            box-shadow: 0 4px 16px rgba(139,0,0,0.4);
+            transition: all 0.2s;
+            margin-bottom: 8px;
+        }
+        .btn-reborn-confirm:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(139,0,0,0.6); background: linear-gradient(145deg, #aa0000, #880000); }
+
+        .btn-stats-toggle {
+            background: none;
+            border: none;
+            color: #6a7a5a;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+        .btn-stats-toggle:hover { color: #ffd700; }
+
+        @media (max-width: 1100px) {
+            .layout-wrapper { max-width: 100%; }
+            .side-panel { width: 180px; min-width: 150px; padding: 12px 10px; }
+        }
+        @media (max-width: 900px) {
+            .layout-wrapper { flex-direction: column; align-items: center; }
+            .side-panel { width: 100%; max-width: 760px; max-height: 200px; order: 0; }
+            .side-panel-left { order: -1; }
+            .side-panel-right { order: 1; }
+        }
+        @media (max-width: 640px) {
+            .game-container { padding: 18px 12px 22px; border-radius: 28px; }
+            .title { font-size: 20px; }
+            .header-right { gap: 6px; }
+            .score-board { gap: 10px; padding: 4px 12px 4px 10px; font-size: 12px; }
+            .score-item .num { font-size: 16px; min-width: 18px; }
+            .chip-display { padding: 4px 10px; font-size: 13px; }
+            .chip-display .chip-amount { font-size: 16px; min-width: 40px; }
+            .lane { grid-template-columns: 128px 1fr; padding: 5px 8px; }
+            .lane-name { font-size: 13px; }
+            .lane-odds { font-size: 15px; }
+            .lane-track { height: 48px; }
+            .horse { font-size: 26px; margin-top: -14px; }
+            .message { font-size: 15px; padding: 2px 12px; }
+            .betting-area { padding: 10px 12px; gap: 8px; }
+            .bet-chip-btn { width: 34px; height: 34px; font-size: 11px; }
+            .bet-chip-btn.chip-allin { width: 46px; }
+            .bet-current { font-size: 17px; min-width: 50px; }
+            .btn-bet-start { padding: 6px 18px; font-size: 13px; }
+            .btn-bet-rebet, .btn-bet-clear { padding: 6px 12px; font-size: 12px; }
+            .countdown-num { font-size: 90px; }
+            .modal-panel { padding: 20px 18px; }
+        }
+        @media (max-width: 420px) {
+            .game-container { padding: 14px 8px 18px; border-radius: 20px; }
+            .title { font-size: 17px; }
+            .lane { grid-template-columns: 104px 1fr; gap: 6px; padding: 4px 6px; }
+            .lane-num { width: 22px; height: 22px; font-size: 11px; }
+            .lane-name { font-size: 12px; }
+            .hot-tag { display: none; }
+            .lane-odds { font-size: 14px; }
+            .lane-track { height: 42px; }
+            .horse { font-size: 22px; margin-top: -12px; }
+            .name-tag { top: -13px; font-size: 9px; }
+            .finish-line { right: 26px; }
+            .message { font-size: 13px; }
+            .bet-chip-btn { width: 30px; height: 30px; font-size: 10px; }
+            .bet-chip-btn.chip-allin { width: 42px; font-size: 10px; }
+            .bet-current { font-size: 15px; min-width: 40px; }
+        }
+
+        .btn:focus-visible, .bet-chip-btn:focus-visible, .lane:focus-visible {
+            outline: 2px solid #ffd700;
+            outline-offset: 3px;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .message.pop, .countdown-num.pop, .achievement-toast, .chip-display .chip-amount.pulse, .finish-line.flash, .track.racing .horse-emoji { animation: none !important; transition: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="achievement-toast" id="achievementToast">
+        <span class="ach-icon" id="achToastIcon">🏆</span>
+        <div class="ach-text">
+            <div class="ach-title" id="achToastTitle">成就解锁！</div>
+            <div class="ach-desc" id="achToastDesc">描述</div>
+        </div>
+    </div>
+
+    <div class="countdown-overlay" id="countdownOverlay">
+        <div class="countdown-num" id="countdownNum">3</div>
+    </div>
+
+    <div class="modal-overlay" id="resultOverlay">
+        <div class="modal-panel" role="dialog" aria-label="比赛结果">
+            <h2>🏁 比赛结果</h2>
+            <div class="result-list" id="resultList"></div>
+            <div class="result-photo" id="resultPhoto"></div>
+            <div class="result-payout" id="resultPayout"></div>
+            <button class="btn-next" id="btnNextRace">🔁 再来一局</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="statsOverlay">
+        <div class="modal-panel" role="dialog" aria-label="统计与成就">
+            <h2>📊 统计与成就</h2>
+            <div class="stats-grid" id="statsGrid"></div>
+            <div class="achievements-section">
+                <h3>🏅 成就</h3>
+                <div class="ach-list" id="achList"></div>
+            </div>
+            <button class="btn-close-modal" id="btnCloseStats">关闭</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="helpOverlay">
+        <div class="modal-panel" role="dialog" aria-label="使用说明">
+            <h2>📖 使用说明</h2>
+            <div class="help-content">
+                <div class="help-section">
+                    <h3>🎯 游戏目标</h3>
+                    <p>从 7 条赛道中挑选马匹下注（可押多匹），只有冠军马按其赔率获得派彩，其余注金不退。</p>
+                </div>
+                <div class="help-section">
+                    <h3>🪙 多马押注</h3>
+                    <ul>
+                        <li>点击赛道选中马匹，筹码计入该马，可分次押多匹</li>
+                        <li>气泡上的 <strong>✕</strong> 可撤回该马的注金，✖ 清空全部</li>
+                        <li>分散押注降低风险，但只有冠军派彩，期望回报不变</li>
+                    </ul>
+                </div>
+                <div class="help-section">
+                    <h3>🐎 马匹属性</h3>
+                    <ul>
+                        <li><strong>基础速度</strong>：决定马匹的先天实力</li>
+                        <li><strong>稳定性</strong>：越高发挥越稳定，越低越容易爆冷</li>
+                        <li><strong>领跑型</strong>：前程强势，后程略有回落</li>
+                        <li><strong>匀速型</strong>：全程平稳发挥</li>
+                        <li><strong>后发型</strong>：前程保存实力，后程发力冲刺</li>
+                    </ul>
+                </div>
+                <div class="help-section">
+                    <h3>💰 赔率规则</h3>
+                    <p>赔率 <strong>x3.2</strong> 表示押中后每 1 筹码返回 3.2（含本金）。热门马赔率低、冷门马赔率高，赔率已包含 15% 的场地抽水。</p>
+                </div>
+                <div class="help-section">
+                    <h3>📸 照片判定</h3>
+                    <p>两匹马几乎同时冲线（差距小于 0.05 秒）时，会触发照片判定回放。</p>
+                </div>
+            </div>
+            <button class="btn-close-modal" id="btnCloseHelp">关闭</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="rebornOverlay">
+        <div class="reborn-panel" role="dialog" aria-label="重生确认">
+            <div class="reborn-icon">💀</div>
+            <h2 id="rebornTitle">确定要重生吗？</h2>
+            <p id="rebornDesc" class="reborn-desc">这将清除所有游戏数据，包括资金、统计和成就。</p>
+            <div class="reborn-progress">
+                <span class="reborn-dot" id="dot1"></span>
+                <span class="reborn-dot" id="dot2"></span>
+                <span class="reborn-dot" id="dot3"></span>
+            </div>
+            <p id="rebornHint" class="reborn-hint">点击下方按钮开始确认</p>
+            <button class="btn-reborn-confirm" id="btnRebornConfirm">确认重生</button>
+            <button class="btn-close-modal" id="btnCloseReborn">取消</button>
+        </div>
+    </div>
+
+    <div class="layout-wrapper">
+        <div class="side-panel side-panel-left">
+            <div class="side-panel-title">🏆 成就</div>
+            <div class="side-ach-list" id="sideAchList"></div>
+        </div>
+
+        <div class="game-container">
+            <div class="header">
+                <div class="title">🏇 <span>赛马场</span></div>
+                <div class="header-right">
+                    <div class="chip-display">
+                        <span class="chip-icon">💰</span>
+                        <span class="chip-amount" id="chipAmount">1000</span>
+                    </div>
+                    <div class="score-board">
+                        <div class="score-item">🏆 <span class="num" id="statWins">0</span></div>
+                        <div class="score-item">💔 <span class="num" id="statLosses">0</span></div>
+                        <div class="score-item">🎯 <span class="num" id="statRate">0%</span></div>
+                    </div>
+                    <button class="btn-stats-toggle" id="btnStatsToggle" aria-label="统计与成就" title="统计与成就">📊</button>
+                    <button class="btn-stats-toggle" id="btnHelpToggle" aria-label="使用说明" title="使用说明">❓</button>
+                    <button class="btn-stats-toggle" id="btnSoundToggle" aria-label="音效开关" title="音效开关">🔊</button>
+                    <button class="btn-reborn" id="btnReborn" title="失去所有，重来一次">💀</button>
+                </div>
+            </div>
+
+            <div class="betting-area" id="bettingArea">
+                <span class="bet-label">下注：</span>
+                <div class="bet-chips" id="betChips"></div>
+                <div class="bet-info">
+                    <span class="bet-current"><span class="label">赌注</span> <span id="betAmount">0</span></span>
+                    <button class="btn-bet-clear" id="btnClearBet" disabled>✖ 清空</button>
+                    <button class="btn-bet-start" id="btnStart" disabled>🚦 开赛</button>
+                    <button class="btn-bet-rebet btn-rebuy hidden-btn" id="btnRebuy">🌅 重新开始 (+5000)</button>
+                </div>
+            </div>
+
+            <div class="track locked" id="track"></div>
+
+            <div class="message-area">
+                <div class="message" id="gameMessage" aria-live="polite">选择一匹马，下注后开赛</div>
+            </div>
+        </div>
+
+        <div class="side-panel side-panel-right">
+            <div class="side-panel-title">📊 统计</div>
+            <div class="side-stats-grid" id="sideStatsGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            const CONFIG = {
+                initialMoney: 1000,
+                minBet: 10,
+                raceTime: 11000,
+                photoMs: 50,
+                rebuyAmount: 5000,
+                houseEdge: 0.85,
+                minOdds: 1.1,
+                maxOdds: 40
+            };
+
+            const HORSE_NAMES = ['赤焰','乌云','追风','闪电','土豆','夜影','糖糖','疾风','流星','奔雷','白龙','金铃','铜锣','独角兽','茉莉','球球','黑旋风','小跑','踏雪','飞燕','旋风','墨玉','晚霞','风铃'];
+
+            const STYLES = {
+                front: { name: '领跑型', curve: 0.85 },
+                steady: { name: '匀速型', curve: 1.0 },
+                closer: { name: '后发型', curve: 1.18 }
+            };
+
+            const HUES = [15, 45, 95, 160, 205, 265, 320];
+            const CHIP_DENOMS = [10, 50, 100, 500];
+
+            const KEYS = {
+                money: 'hr_money_v1',
+                stats: 'hr_stats_v1',
+                sound: 'hr_sound_v1'
+            };
+
+            function gaussian() {
+                let u = 0, v = 0;
+                while (!u) u = Math.random();
+                while (!v) v = Math.random();
+                return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+            }
+
+            function shuffle(arr) {
+                const a = arr.slice();
+                for (let i = a.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [a[i], a[j]] = [a[j], a[i]];
+                }
+                return a;
+            }
+
+            function generateHorses() {
+                const names = shuffle(HORSE_NAMES).slice(0, 7);
+                const styleKeys = Object.keys(STYLES);
+                const horses = names.map((name, i) => {
+                    const styleKey = styleKeys[Math.floor(Math.random() * styleKeys.length)];
+                    return {
+                        lane: i,
+                        name,
+                        baseSpeed: 0.82 + Math.random() * 0.36,
+                        stability: 0.5 + Math.random() * 0.5,
+                        styleKey,
+                        hue: HUES[i],
+                        odds: 5,
+                        isFavorite: false
+                    };
+                });
+                const K = 600;
+                const meanBase = horses.reduce((a, h) => a + h.baseSpeed, 0) / horses.length;
+                const wins = new Array(horses.length).fill(0);
+                for (let s = 0; s < K; s++) {
+                    let best = 0, bestT = Infinity;
+                    for (let i = 0; i < horses.length; i++) {
+                        const h = horses[i];
+                        const sigma = 0.04 + 0.08 * (1 - h.stability);
+                        let form = 1 + gaussian() * sigma;
+                        form = Math.max(0.88, Math.min(1.15, form));
+                        const t = CONFIG.raceTime * (meanBase / h.baseSpeed) / form;
+                        if (t < bestT) { bestT = t; best = i; }
+                    }
+                    wins[best]++;
+                }
+                horses.forEach((h, i) => {
+                    const p = (wins[i] + 1) / (K + horses.length);
+                    h.odds = Math.max(CONFIG.minOdds, Math.min(CONFIG.maxOdds, Math.round((CONFIG.houseEdge / p) * 10) / 10));
+                });
+                let favIdx = 0;
+                horses.forEach((h, i) => { if (h.odds < horses[favIdx].odds) favIdx = i; });
+                horses[favIdx].isFavorite = true;
+                return horses;
+            }
+
+            class SoundFX {
+                constructor() {
+                    this.ctx = null;
+                    this.enabled = true;
+                    try {
+                        this.enabled = localStorage.getItem(KEYS.sound) !== 'off';
+                    } catch (_) {}
+                }
+                init() {
+                    if (!this.ctx) {
+                        try {
+                            const AC = window.AudioContext || window.webkitAudioContext;
+                            if (AC) this.ctx = new AC();
+                        } catch (_) {
+                            this.ctx = null;
+                        }
+                    }
+                    if (this.ctx && this.ctx.state === 'suspended') {
+                        try {
+                            const p = this.ctx.resume();
+                            if (p && p.catch) p.catch(() => {});
+                        } catch (_) {}
+                    }
+                    return this.ctx;
+                }
+                toggle() {
+                    this.enabled = !this.enabled;
+                    if (this.enabled) this.init();
+                    try {
+                        localStorage.setItem(KEYS.sound, this.enabled ? 'on' : 'off');
+                    } catch (_) {}
+                    return this.enabled;
+                }
+                _tone(freq, duration, type = 'sine', volume = 0.15, when = 0, slideTo = null) {
+                    if (!this.enabled) return;
+                    try {
+                        const ctx = this.init();
+                        if (!ctx) return;
+                        const t = ctx.currentTime + when;
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = type;
+                        osc.frequency.setValueAtTime(freq, t);
+                        if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t + duration);
+                        gain.gain.setValueAtTime(0.0001, t);
+                        gain.gain.exponentialRampToValueAtTime(volume, t + 0.01);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+                        osc.connect(gain).connect(ctx.destination);
+                        osc.start(t);
+                        osc.stop(t + duration + 0.05);
+                    } catch (_) {}
+                }
+                _noise(duration, volume = 0.1, filterFreq = 3000, when = 0) {
+                    if (!this.enabled) return;
+                    try {
+                        const ctx = this.init();
+                        if (!ctx) return;
+                        const t = ctx.currentTime + when;
+                        const len = Math.max(1, Math.floor(ctx.sampleRate * duration));
+                        const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
+                        const data = buffer.getChannelData(0);
+                        for (let i = 0; i < len; i++) {
+                            data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+                        }
+                        const src = ctx.createBufferSource();
+                        src.buffer = buffer;
+                        const filter = ctx.createBiquadFilter();
+                        filter.type = 'bandpass';
+                        filter.frequency.value = filterFreq;
+                        const gain = ctx.createGain();
+                        gain.gain.setValueAtTime(volume, t);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+                        src.connect(filter).connect(gain).connect(ctx.destination);
+                        src.start(t);
+                    } catch (_) {}
+                }
+                hoof() {
+                    this._noise(0.05, 0.045, 700 + Math.random() * 400);
+                }
+                whistle() {
+                    this._tone(1700, 0.28, 'square', 0.1, 0, 2300);
+                    this._tone(1700, 0.2, 'square', 0.07, 0.32, 2300);
+                }
+                countBeep(final = false) {
+                    if (final) this._tone(880, 0.45, 'square', 0.14);
+                    else this._tone(660, 0.12, 'square', 0.11);
+                }
+                chip() {
+                    this._tone(2200, 0.04, 'square', 0.06);
+                    this._tone(1600, 0.05, 'square', 0.05, 0.03);
+                }
+                click() {
+                    this._tone(1200, 0.03, 'square', 0.05);
+                }
+                camera() {
+                    this._noise(0.03, 0.16, 4200);
+                    this._tone(1500, 0.05, 'square', 0.08, 0.04);
+                }
+                win() {
+                    const notes = [523.25, 659.25, 783.99, 1046.5];
+                    notes.forEach((f, i) => this._tone(f, 0.14, 'triangle', 0.14, i * 0.09));
+                }
+                lose() {
+                    this._tone(330, 0.2, 'sawtooth', 0.08, 0, 220);
+                    this._tone(220, 0.3, 'sawtooth', 0.08, 0.15, 130);
+                }
+                bankrupt() {
+                    const notes = [392, 349.23, 311.13, 261.63, 196];
+                    notes.forEach((f, i) => this._tone(f, 0.22, 'sawtooth', 0.1, i * 0.16));
+                }
+                achievement() {
+                    const notes = [659.25, 783.99, 987.77, 1318.5];
+                    notes.forEach((f, i) => this._tone(f, 0.12, 'sine', 0.12, i * 0.08));
+                    this._tone(2093, 0.3, 'sine', 0.06, 0.32);
+                }
+            }
+
+            const ACHIEVEMENTS = [
+                { id: 'first_win', name: '首胜', desc: '押中第一场冠军', icon: '🏆', check: s => s.totalWins >= 1 },
+                { id: 'streak3', name: '三连胜', desc: '连续押中3场', icon: '🔥', check: s => s.bestStreak >= 3 },
+                { id: 'streak5', name: '五连胜', desc: '连续押中5场', icon: '💫', check: s => s.bestStreak >= 5 },
+                { id: 'streak7', name: '七连胜', desc: '连续押中7场', icon: '🌟', check: s => s.bestStreak >= 7 },
+                { id: 'lose5', name: '非酋', desc: '连输5场', icon: '🍀', check: s => s.bestLossStreak >= 5 },
+                { id: 'lose10', name: '十连败', desc: '连输10场', icon: '😱', check: s => s.bestLossStreak >= 10 },
+                { id: 'upset8', name: '爆冷大师', desc: '押中赔率x8以上的冠军', icon: '⚡', check: s => s.upsetWins >= 1 },
+                { id: 'fav5', name: '稳如老狗', desc: '押中最热门马获胜5次', icon: '🛡️', check: s => s.favoriteWins >= 5 },
+                { id: 'dark_horse', name: '黑马冲线', desc: '押的x5以上冷门马跑进前三', icon: '🐴', check: s => s.darkHorseTop3 >= 1 },
+                { id: 'allin_win', name: '全押制胜', desc: '全押并获胜', icon: '🎲', check: s => s.allInWins >= 1 },
+                { id: 'high_roller', name: '豪客', desc: '单注达到1000', icon: '👑', check: s => s.maxBet >= 1000 },
+                { id: 'payout1k', name: '大派彩', desc: '单次派彩达到1000', icon: '💎', check: s => s.maxPayout >= 1000 },
+                { id: 'payout5k', name: '富贵逼人', desc: '单次派彩达到5000', icon: '💰', check: s => s.maxPayout >= 5000 },
+                { id: 'races10', name: '初来乍到', desc: '观看10场比赛', icon: '🎮', check: s => s.totalRaces >= 10 },
+                { id: 'races50', name: '赛马常客', desc: '观看50场比赛', icon: '🎯', check: s => s.totalRaces >= 50 },
+                { id: 'races100', name: '老观众', desc: '观看100场比赛', icon: '🎰', check: s => s.totalRaces >= 100 },
+                { id: 'races500', name: '传奇看客', desc: '观看500场比赛', icon: '🎩', check: s => s.totalRaces >= 500 },
+                { id: 'loyal3', name: '死忠粉', desc: '押中同一匹名字的马3次', icon: '❤️', check: s => Object.values(s.nameWins).some(v => v >= 3) },
+                { id: 'all_lanes', name: '雨露均沾', desc: '7条赛道都押中过', icon: '🌈', check: s => Object.keys(s.laneWins).length >= 7 },
+                { id: 'prophet', name: '神算子', desc: '30场后押中率60%以上', icon: '🔮', check: s => s.totalRaces >= 30 && s.totalWins / s.totalRaces >= 0.6 },
+                { id: 'comeback', name: '绝地翻盘', desc: '资金低于100后赢回500以上', icon: '🦅', check: s => s.comebackCount >= 1 },
+                { id: 'phoenix', name: '不死鸟', desc: '破产后资金达到10000', icon: '🌅', check: s => s.phoenixCount >= 1 },
+                { id: 'first_bankrupt', name: '初次破产', desc: '首次破产', icon: '💀', check: s => s.bankruptCount >= 1 },
+                { id: 'bankrupt3', name: '再三破产', desc: '破产3次仍不放弃', icon: '🔄', check: s => s.bankruptCount >= 3 },
+                { id: 'rich20k', name: '大富豪', desc: '资金峰值达到20000', icon: '🏦', check: s => s.peakMoney >= 20000 },
+                { id: 'net2k', name: '净赢家', desc: '净赢筹码达到2000', icon: '💵', check: s => (s.totalWon - s.totalLost) >= 2000 },
+                { id: 'photo_win', name: '千钧一发', desc: '在照片判定局押中冠军', icon: '📸', check: s => s.photoWins >= 1 }
+            ];
+
+            class StatsManager {
+                constructor() {
+                    this.data = this._load();
+                    this._newAch = [];
+                }
+                _defaults() {
+                    return {
+                        totalRaces: 0, totalWins: 0, totalLosses: 0,
+                        currentStreak: 0, bestStreak: 0,
+                        currentLossStreak: 0, bestLossStreak: 0,
+                        totalWon: 0, totalLost: 0, totalBet: 0,
+                        maxBet: 0, maxPayout: 0,
+                        allInWins: 0, favoriteWins: 0, upsetWins: 0,
+                        darkHorseTop3: 0, photoWins: 0,
+                        bankruptCount: 0, peakMoney: CONFIG.initialMoney, lowestMoney: CONFIG.initialMoney,
+                        postBankrupt: false, phoenixCount: 0,
+                        comebackLowMark: 0, comebackCount: 0,
+                        laneWins: {}, nameWins: {},
+                        unlockedAchievements: []
+                    };
+                }
+                _load() {
+                    const defaults = this._defaults();
+                    try {
+                        const raw = localStorage.getItem(KEYS.stats);
+                        if (raw) return Object.assign(defaults, JSON.parse(raw));
+                    } catch (_) {}
+                    return defaults;
+                }
+                save() {
+                    try {
+                        localStorage.setItem(KEYS.stats, JSON.stringify(this.data));
+                    } catch (_) {}
+                }
+                get unlocked() { return this.data.unlockedAchievements; }
+                recordRace({ win, rank, bet, payout, odds, isFavorite, allIn, photo, lane, name }) {
+                    const d = this.data;
+                    d.totalRaces++;
+                    d.totalBet += bet;
+                    if (bet > d.maxBet) d.maxBet = bet;
+                    if (payout > d.maxPayout) d.maxPayout = payout;
+                    if (win) {
+                        d.totalWins++;
+                        d.totalWon += payout;
+                        d.currentStreak++;
+                        d.currentLossStreak = 0;
+                        if (d.currentStreak > d.bestStreak) d.bestStreak = d.currentStreak;
+                        if (odds >= 8) d.upsetWins++;
+                        if (isFavorite) d.favoriteWins++;
+                        if (allIn) d.allInWins++;
+                        if (photo) d.photoWins++;
+                        d.laneWins[lane] = (d.laneWins[lane] || 0) + 1;
+                        d.nameWins[name] = (d.nameWins[name] || 0) + 1;
+                    } else {
+                        d.totalLosses++;
+                        d.totalLost += bet;
+                        d.currentStreak = 0;
+                        d.currentLossStreak++;
+                        if (d.currentLossStreak > d.bestLossStreak) d.bestLossStreak = d.currentLossStreak;
+                    }
+                    if (rank && rank <= 3 && odds >= 5) d.darkHorseTop3++;
+                    this._checkAchievements();
+                    this.save();
+                }
+                recordBankrupt() {
+                    this.data.bankruptCount++;
+                    this.data.postBankrupt = true;
+                    this._checkAchievements();
+                    this.save();
+                }
+                updateMoney(m) {
+                    const d = this.data;
+                    if (m > d.peakMoney) d.peakMoney = m;
+                    if (m < d.lowestMoney) d.lowestMoney = m;
+                    if (d.postBankrupt && m >= 10000) {
+                        d.phoenixCount++;
+                        d.postBankrupt = false;
+                    }
+                    if (m < 100) {
+                        if (!d.comebackLowMark) d.comebackLowMark = m;
+                    } else if (d.comebackLowMark > 0 && m >= d.comebackLowMark + 500) {
+                        d.comebackCount++;
+                        d.comebackLowMark = 0;
+                    }
+                }
+                _checkAchievements() {
+                    this._newAch = [];
+                    for (const ach of ACHIEVEMENTS) {
+                        if (!this.data.unlockedAchievements.includes(ach.id) && ach.check(this.data)) {
+                            this.data.unlockedAchievements.push(ach.id);
+                            this._newAch.push(ach);
+                        }
+                    }
+                }
+                getNewAchievements() {
+                    const list = this._newAch;
+                    this._newAch = [];
+                    return list;
+                }
+                getStats() {
+                    const d = this.data;
+                    return {
+                        totalRaces: d.totalRaces,
+                        totalWins: d.totalWins,
+                        totalLosses: d.totalLosses,
+                        hitRate: d.totalRaces > 0 ? (d.totalWins / d.totalRaces * 100).toFixed(1) : '0.0',
+                        currentStreak: d.currentStreak,
+                        bestStreak: d.bestStreak,
+                        bestLossStreak: d.bestLossStreak,
+                        totalWon: d.totalWon,
+                        totalLost: d.totalLost,
+                        net: d.totalWon - d.totalLost,
+                        avgBet: d.totalRaces > 0 ? (d.totalBet / d.totalRaces).toFixed(1) : '0.0',
+                        maxBet: d.maxBet,
+                        maxPayout: d.maxPayout,
+                        allInWins: d.allInWins,
+                        favoriteWins: d.favoriteWins,
+                        upsetWins: d.upsetWins,
+                        darkHorseTop3: d.darkHorseTop3,
+                        photoWins: d.photoWins,
+                        bankruptCount: d.bankruptCount,
+                        peakMoney: d.peakMoney,
+                        lowestMoney: d.lowestMoney,
+                        unlockedCount: d.unlockedAchievements.length,
+                        totalAchievements: ACHIEVEMENTS.length
+                    };
+                }
+            }
+
+            class Game {
+                constructor() {
+                    this.el = {};
+                    this._cacheDOM();
+
+                    this.sfx = new SoundFX();
+                    this.stats = new StatsManager();
+
+                    this.money = this._loadMoney();
+                    this.horses = [];
+                    this.betMap = {};
+                    this.activeLane = -1;
+                    this.state = 'betting';
+                    this.raceData = [];
+                    this.finishOrder = [];
+                    this._rafId = 0;
+                    this._cdTimers = [];
+                    this._toastQueue = [];
+                    this._toastShowing = false;
+                    this._rebornStep = 0;
+                    this._lastLeader = -1;
+                    this._lastLeaderAt = 0;
+                    this._lastHoof = 0;
+
+                    this._buildLanes();
+                    this._renderBetChips();
+                    this._bindEvents();
+                    this._newRace();
+                    this._updateMoneyDisplay();
+                    this._updateStatsUI();
+                    this.el.btnSoundToggle.textContent = this.sfx.enabled ? '🔊' : '🔇';
+                    this._showMessage('选择一匹马，下注后开赛', '');
+                }
+
+                _cacheDOM() {
+                    const id = n => document.getElementById(n);
+                    this.el = {
+                        track: id('track'),
+                        message: id('gameMessage'),
+                        chipAmount: id('chipAmount'),
+                        statWins: id('statWins'),
+                        statLosses: id('statLosses'),
+                        statRate: id('statRate'),
+                        bettingArea: id('bettingArea'),
+                        betChips: id('betChips'),
+                        betAmount: id('betAmount'),
+                        btnClearBet: id('btnClearBet'),
+                        btnStart: id('btnStart'),
+                        btnRebuy: id('btnRebuy'),
+                        btnStatsToggle: id('btnStatsToggle'),
+                        btnHelpToggle: id('btnHelpToggle'),
+                        btnSoundToggle: id('btnSoundToggle'),
+                        btnReborn: id('btnReborn'),
+                        countdownOverlay: id('countdownOverlay'),
+                        countdownNum: id('countdownNum'),
+                        resultOverlay: id('resultOverlay'),
+                        resultList: id('resultList'),
+                        resultPhoto: id('resultPhoto'),
+                        resultPayout: id('resultPayout'),
+                        btnNextRace: id('btnNextRace'),
+                        statsOverlay: id('statsOverlay'),
+                        statsGrid: id('statsGrid'),
+                        achList: id('achList'),
+                        btnCloseStats: id('btnCloseStats'),
+                        helpOverlay: id('helpOverlay'),
+                        btnCloseHelp: id('btnCloseHelp'),
+                        rebornOverlay: id('rebornOverlay'),
+                        rebornTitle: id('rebornTitle'),
+                        rebornDesc: id('rebornDesc'),
+                        rebornHint: id('rebornHint'),
+                        btnRebornConfirm: id('btnRebornConfirm'),
+                        btnCloseReborn: id('btnCloseReborn'),
+                        dot1: id('dot1'),
+                        dot2: id('dot2'),
+                        dot3: id('dot3'),
+                        achToast: id('achievementToast'),
+                        achToastIcon: id('achToastIcon'),
+                        achToastTitle: id('achToastTitle'),
+                        achToastDesc: id('achToastDesc'),
+                        sideAchList: id('sideAchList'),
+                        sideStatsGrid: id('sideStatsGrid')
+                    };
+                }
+
+                _buildLanes() {
+                    this.laneEls = [];
+                    for (let i = 0; i < 7; i++) {
+                        const lane = document.createElement('div');
+                        lane.className = 'lane';
+                        lane.dataset.lane = i;
+                        lane.innerHTML =
+                            '<div class="lane-info">' +
+                                '<div class="lane-num">' + (i + 1) + '</div>' +
+                                '<div class="lane-meta">' +
+                                    '<div class="lane-name"><span class="ln-name"></span><span class="hot-tag">⭐热门</span></div>' +
+                                    '<div class="lane-style"><span class="style-tag"></span></div>' +
+                                '</div>' +
+                                '<div class="lane-odds"></div>' +
+                            '</div>' +
+                            '<div class="lane-track">' +
+                                '<div class="finish-line"></div>' +
+                                '<div class="horse"><span class="horse-emoji">🐎</span><span class="name-tag"></span><span class="rank-badge"></span><span class="bet-bubble"></span></div>' +
+                            '</div>';
+                        const refs = {
+                            lane,
+                            nameEl: lane.querySelector('.ln-name'),
+                            hotEl: lane.querySelector('.hot-tag'),
+                            styleEl: lane.querySelector('.style-tag'),
+                            oddsEl: lane.querySelector('.lane-odds'),
+                            trackEl: lane.querySelector('.lane-track'),
+                            finishEl: lane.querySelector('.finish-line'),
+                            horseEl: lane.querySelector('.horse'),
+                            emojiEl: lane.querySelector('.horse-emoji'),
+                            nameTagEl: lane.querySelector('.name-tag'),
+                            rankEl: lane.querySelector('.rank-badge'),
+                            bubbleEl: lane.querySelector('.bet-bubble')
+                        };
+                        lane.addEventListener('click', () => this._selectLane(i));
+                        refs.bubbleEl.addEventListener('click', e => {
+                            const t = e.target;
+                            if (t.classList && t.classList.contains('bb-x')) {
+                                e.stopPropagation();
+                                this._removeBet(parseInt(t.dataset.lane, 10));
+                            }
+                        });
+                        this.el.track.appendChild(lane);
+                        this.laneEls.push(refs);
+                    }
+                }
+
+                _renderBetChips() {
+                    this.el.betChips.innerHTML = '';
+                    for (const denom of CHIP_DENOMS) {
+                        const btn = document.createElement('button');
+                        btn.className = 'bet-chip-btn';
+                        btn.textContent = denom;
+                        btn.addEventListener('click', () => this._addBet(denom));
+                        this.el.betChips.appendChild(btn);
+                    }
+                    const allin = document.createElement('button');
+                    allin.className = 'bet-chip-btn chip-allin';
+                    allin.textContent = '全押';
+                    allin.addEventListener('click', () => this._allIn());
+                    this.el.betChips.appendChild(allin);
+                }
+
+                _bindEvents() {
+                    this.el.btnStart.addEventListener('click', () => this._startRace());
+                    this.el.btnClearBet.addEventListener('click', () => this._clearBet());
+                    this.el.btnRebuy.addEventListener('click', () => this._rebuy());
+                    this.el.btnNextRace.addEventListener('click', () => this._nextRace());
+                    this.el.btnStatsToggle.addEventListener('click', () => {
+                        this.sfx.click();
+                        this._openStats();
+                    });
+                    this.el.btnCloseStats.addEventListener('click', () => this.el.statsOverlay.classList.remove('open'));
+                    this.el.statsOverlay.addEventListener('click', e => {
+                        if (e.target === this.el.statsOverlay) this.el.statsOverlay.classList.remove('open');
+                    });
+                    this.el.btnHelpToggle.addEventListener('click', () => {
+                        this.sfx.click();
+                        this.el.helpOverlay.classList.add('open');
+                    });
+                    this.el.btnCloseHelp.addEventListener('click', () => this.el.helpOverlay.classList.remove('open'));
+                    this.el.helpOverlay.addEventListener('click', e => {
+                        if (e.target === this.el.helpOverlay) this.el.helpOverlay.classList.remove('open');
+                    });
+                    this.el.resultOverlay.addEventListener('click', e => {
+                        if (e.target === this.el.resultOverlay) this._nextRace();
+                    });
+                    this.el.btnSoundToggle.addEventListener('click', () => {
+                        const on = this.sfx.toggle();
+                        this.el.btnSoundToggle.textContent = on ? '🔊' : '🔇';
+                    });
+                    this.el.btnReborn.addEventListener('click', () => this._openReborn());
+                    this.el.btnRebornConfirm.addEventListener('click', () => this._handleRebornClick());
+                    this.el.btnCloseReborn.addEventListener('click', () => this._closeReborn());
+                    this.el.rebornOverlay.addEventListener('click', e => {
+                        if (e.target === this.el.rebornOverlay) this._closeReborn();
+                    });
+
+                    document.addEventListener('keydown', e => {
+                        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                        if (e.key === 'Escape') {
+                            if (this.el.statsOverlay.classList.contains('open')) {
+                                this.el.statsOverlay.classList.remove('open');
+                                return;
+                            }
+                            if (this.el.helpOverlay.classList.contains('open')) {
+                                this.el.helpOverlay.classList.remove('open');
+                                return;
+                            }
+                            if (this.el.rebornOverlay.classList.contains('open')) {
+                                this._closeReborn();
+                                return;
+                            }
+                            if (this.el.resultOverlay.classList.contains('open')) {
+                                this._nextRace();
+                                return;
+                            }
+                        }
+                        if (e.key >= '1' && e.key <= '7') {
+                            if (this.state === 'betting') this._selectLane(parseInt(e.key, 10) - 1);
+                            return;
+                        }
+                        switch (e.key.toLowerCase()) {
+                            case ' ':
+                                e.preventDefault();
+                                if (!this.el.btnStart.disabled) this._startRace();
+                                break;
+                            case 'm': {
+                                const on = this.sfx.toggle();
+                                this.el.btnSoundToggle.textContent = on ? '🔊' : '🔇';
+                                break;
+                            }
+                        }
+                    });
+
+                    document.addEventListener('dblclick', e => e.preventDefault());
+
+                    const unlockAudio = () => {
+                        this.sfx.init();
+                        document.removeEventListener('pointerdown', unlockAudio);
+                        document.removeEventListener('keydown', unlockAudio);
+                    };
+                    document.addEventListener('pointerdown', unlockAudio);
+                    document.addEventListener('keydown', unlockAudio);
+                }
+
+                _newRace() {
+                    this.horses = generateHorses();
+                    this.betMap = {};
+                    this.activeLane = -1;
+                    this.raceData = [];
+                    this.finishOrder = [];
+                    this.state = 'betting';
+                    this.el.track.classList.remove('racing', 'finished');
+                    this.el.track.classList.add('locked');
+                    this.el.bettingArea.classList.remove('hidden');
+                    this.el.resultOverlay.classList.remove('open');
+                    for (let i = 0; i < 7; i++) {
+                        const h = this.horses[i];
+                        const refs = this.laneEls[i];
+                        refs.nameEl.textContent = h.name;
+                        refs.nameTagEl.textContent = h.name;
+                        refs.hotEl.style.display = h.isFavorite ? '' : 'none';
+                        refs.styleEl.textContent = STYLES[h.styleKey].name;
+                        refs.styleEl.className = 'style-tag ' + h.styleKey;
+                        refs.oddsEl.textContent = 'x' + h.odds.toFixed(1);
+                        refs.horseEl.style.transform = 'translateX(0px)';
+                        refs.emojiEl.style.filter = 'sepia(1) saturate(3.5) hue-rotate(' + h.hue + 'deg) brightness(1.15)';
+                        refs.rankEl.textContent = '';
+                        refs.rankEl.classList.remove('first');
+                        refs.finishEl.classList.remove('flash');
+                        refs.bubbleEl.classList.remove('show');
+                        refs.lane.classList.remove('selected');
+                    }
+                    this._updateBetUI();
+                }
+
+                _selectLane(i) {
+                    if (this.state !== 'betting') return;
+                    this.activeLane = i;
+                    this.laneEls.forEach((refs, idx) => {
+                        refs.lane.classList.toggle('selected', idx === i);
+                    });
+                    this.sfx.click();
+                    this._updateBetUI();
+                }
+
+                _totalBet() {
+                    return Object.values(this.betMap).reduce((a, b) => a + b, 0);
+                }
+
+                _addBet(amount) {
+                    if (this.state !== 'betting') return;
+                    if (this.activeLane < 0) {
+                        this._showMessage('先点击赛道选择一匹马', '');
+                        return;
+                    }
+                    if (this.money - this._totalBet() < amount) return;
+                    this.betMap[this.activeLane] = (this.betMap[this.activeLane] || 0) + amount;
+                    this.sfx.chip();
+                    this._updateBetUI();
+                }
+
+                _allIn() {
+                    if (this.state !== 'betting') return;
+                    if (this.activeLane < 0) {
+                        this._showMessage('先点击赛道选择一匹马', '');
+                        return;
+                    }
+                    const remain = this.money - this._totalBet();
+                    if (remain < CONFIG.minBet) return;
+                    this.betMap[this.activeLane] = (this.betMap[this.activeLane] || 0) + remain;
+                    this.sfx.chip();
+                    this._updateBetUI();
+                }
+
+                _removeBet(lane) {
+                    if (this.state !== 'betting') return;
+                    delete this.betMap[lane];
+                    this.sfx.click();
+                    this._updateBetUI();
+                }
+
+                _clearBet() {
+                    if (this.state !== 'betting') return;
+                    this.betMap = {};
+                    this.sfx.click();
+                    this._updateBetUI();
+                }
+
+                _updateBetUI() {
+                    const betting = this.state === 'betting';
+                    const total = this._totalBet();
+                    this.el.betAmount.textContent = total;
+                    this.laneEls.forEach((refs, i) => {
+                        const amt = this.betMap[i] || 0;
+                        refs.lane.classList.toggle('staked', amt > 0);
+                        refs.bubbleEl.classList.toggle('show', betting && amt > 0);
+                        if (amt > 0) refs.bubbleEl.innerHTML = '🪙' + amt + '<span class="bb-x" data-lane="' + i + '">✕</span>';
+                    });
+                    const remain = this.money - total;
+                    const chipBtns = this.el.betChips.querySelectorAll('.bet-chip-btn');
+                    chipBtns.forEach((btn, idx) => {
+                        if (idx < CHIP_DENOMS.length) {
+                            btn.disabled = !betting || remain < CHIP_DENOMS[idx];
+                        } else {
+                            btn.disabled = !betting || remain < CONFIG.minBet;
+                        }
+                    });
+                    this.el.btnClearBet.disabled = !betting || total === 0;
+                    this.el.btnStart.disabled = !betting || total < CONFIG.minBet;
+                    const broke = this.money < CONFIG.minBet;
+                    this.el.btnRebuy.classList.toggle('hidden-btn', !broke);
+                    this.el.track.classList.toggle('locked', !betting);
+                }
+
+                _updateMoneyDisplay() {
+                    this.el.chipAmount.textContent = this.money;
+                    this.el.chipAmount.classList.remove('pulse');
+                    void this.el.chipAmount.offsetWidth;
+                    this.el.chipAmount.classList.add('pulse');
+                    this.stats.updateMoney(this.money);
+                }
+
+                _saveMoney() {
+                    try {
+                        localStorage.setItem(KEYS.money, String(this.money));
+                    } catch (_) {}
+                }
+
+                _loadMoney() {
+                    try {
+                        const raw = localStorage.getItem(KEYS.money);
+                        if (raw !== null) {
+                            const val = parseInt(raw, 10);
+                            if (val >= 0) return val;
+                        }
+                    } catch (_) {}
+                    return CONFIG.initialMoney;
+                }
+
+                _startRace() {
+                    if (this.state !== 'betting') return;
+                    const total = this._totalBet();
+                    if (total < CONFIG.minBet) return;
+                    if (total > this.money) return;
+                    this._moneyBeforeRace = this.money;
+                    this.money -= total;
+                    this._saveMoney();
+                    this._updateMoneyDisplay();
+                    this.state = 'countdown';
+                    this.el.bettingArea.classList.add('hidden');
+                    this.el.track.classList.add('locked');
+                    this._updateBetUI();
+                    this._showMessage('各就各位...', '');
+                    this._runCountdown();
+                }
+
+                _runCountdown() {
+                    this._clearCountdown();
+                    const ov = this.el.countdownOverlay;
+                    const num = this.el.countdownNum;
+                    ov.classList.add('show');
+                    const seq = [['3', false], ['2', false], ['1', false], ['GO!', true]];
+                    seq.forEach((item, idx) => {
+                        this._cdTimers.push(setTimeout(() => {
+                            if (this.state !== 'countdown') return;
+                            num.textContent = item[0];
+                            num.classList.remove('pop');
+                            void num.offsetWidth;
+                            num.classList.add('pop');
+                            if (item[1]) this.sfx.whistle();
+                            else this.sfx.countBeep();
+                        }, idx * 700));
+                    });
+                    this._cdTimers.push(setTimeout(() => {
+                        if (this.state !== 'countdown') return;
+                        ov.classList.remove('show');
+                        this._beginRacing();
+                    }, 2800));
+                }
+
+                _clearCountdown() {
+                    this._cdTimers.forEach(t => clearTimeout(t));
+                    this._cdTimers = [];
+                    this.el.countdownOverlay.classList.remove('show');
+                }
+
+                _beginRacing() {
+                    this.state = 'racing';
+                    const meanBase = this.horses.reduce((a, h) => a + h.baseSpeed, 0) / 7;
+                    this.raceData = this.horses.map(h => {
+                        const sigma = 0.04 + 0.08 * (1 - h.stability);
+                        let form = 1 + gaussian() * sigma;
+                        form = Math.max(0.88, Math.min(1.15, form));
+                        return {
+                            finishTime: CONFIG.raceTime * (meanBase / h.baseSpeed) / form,
+                            curve: STYLES[h.styleKey].curve + (Math.random() - 0.5) * 0.06,
+                            wA: 0.005 + (1 - h.stability) * 0.008,
+                            wF: 2 + Math.random() * 3,
+                            wPhi: Math.random() * Math.PI * 2,
+                            finished: false
+                        };
+                    });
+                    this.el.track.classList.add('racing');
+                    this._showMessage('🏁 比赛进行中...', '');
+                    this._lastHoof = performance.now();
+                    this._lastLeaderAt = 0;
+                    const loop = () => {
+                        if (this.state !== 'racing') return;
+                        const now = performance.now();
+                        const t = now - this._raceStart;
+                        if (now - this._lastHoof > 175) {
+                            this.sfx.hoof();
+                            this._lastHoof = now;
+                        }
+                        let allDone = true;
+                        this.horses.forEach((h, i) => {
+                            const r = this.raceData[i];
+                            let progress;
+                            if (r.finished) {
+                                progress = 1;
+                            } else if (t >= r.finishTime) {
+                                r.finished = true;
+                                progress = 1;
+                                this.finishOrder.push(i);
+                                if (this.finishOrder.length === 1) {
+                                    this.laneEls[i].finishEl.classList.add('flash');
+                                    setTimeout(() => this.laneEls[i].finishEl.classList.remove('flash'), 1000);
+                                }
+                            } else {
+                                const u = t / r.finishTime;
+                                progress = Math.pow(u, r.curve) + r.wA * Math.sin(6.2832 * r.wF * u + r.wPhi);
+                                progress = Math.max(0, Math.min(0.995, progress));
+                            }
+                            h.progress = progress;
+                            if (!r.finished) allDone = false;
+                        });
+                        const order = this.horses.map((h, i) => i).sort((a, b) => this.horses[b].progress - this.horses[a].progress);
+                        order.forEach((lane, idx) => {
+                            const rankEl = this.laneEls[lane].rankEl;
+                            rankEl.textContent = idx + 1;
+                            rankEl.classList.toggle('first', idx === 0);
+                        });
+                        if (now - this._lastLeaderAt > 600) {
+                            this._lastLeaderAt = now;
+                            const leader = this.horses[order[0]];
+                            this._showMessage('🏁 领跑: ' + (order[0] + 1) + '号 ' + leader.name, '');
+                        }
+                        this.horses.forEach((h, i) => {
+                            const maxX = this.laneEls[i].trackEl.clientWidth - 66;
+                            this.laneEls[i].horseEl.style.transform = 'translateX(' + (h.progress * maxX).toFixed(1) + 'px)';
+                        });
+                        if (allDone) {
+                            this._endRace();
+                            return;
+                        }
+                        this._rafId = requestAnimationFrame(loop);
+                    };
+                    this._raceStart = performance.now();
+                    this._rafId = requestAnimationFrame(loop);
+                }
+
+                _endRace() {
+                    this.state = 'result';
+                    this.el.track.classList.remove('racing');
+                    this.el.track.classList.add('finished');
+                    this.finishOrder.forEach((lane, idx) => {
+                        const rankEl = this.laneEls[lane].rankEl;
+                        rankEl.textContent = idx + 1;
+                        rankEl.classList.toggle('first', idx === 0);
+                    });
+                    const winLane = this.finishOrder[0];
+                    const secondLane = this.finishOrder[1];
+                    const diff = Math.abs(this.raceData[winLane].finishTime - this.raceData[secondLane].finishTime);
+                    const photo = diff < CONFIG.photoMs;
+                    if (photo) this.sfx.camera();
+                    const bet = this._moneyBeforeRace - this.money;
+                    const isWin = (this.betMap[winLane] || 0) > 0;
+                    const payout = isWin ? Math.round(this.betMap[winLane] * this.horses[winLane].odds) : 0;
+                    if (payout > 0) this.money += payout;
+                    this._updateMoneyDisplay();
+                    this._saveMoney();
+                    try {
+                        this.stats.recordRace({
+                            win: isWin,
+                            rank: isWin ? 1 : 0,
+                            bet,
+                            payout,
+                            odds: this.horses[winLane].odds,
+                            isFavorite: this.horses[winLane].isFavorite,
+                            allIn: bet === this._moneyBeforeRace,
+                            photo,
+                            lane: winLane,
+                            name: this.horses[winLane].name
+                        });
+                        this._updateStatsUI();
+                        this._checkAchievements();
+                        if (isWin) {
+                            this.sfx.win();
+                            this._showMessage('🎉 押中！' + (winLane + 1) + '号 ' + this.horses[winLane].name + ' 夺冠！', 'win');
+                        } else {
+                            if (this.money < CONFIG.minBet) this.sfx.bankrupt();
+                            else this.sfx.lose();
+                            this._showMessage('😢 未能押中，冠军是 ' + (winLane + 1) + '号 ' + this.horses[winLane].name, 'lose');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                    }
+                    setTimeout(() => {
+                        try {
+                            this._showResult(photo, diff, bet, payout, isWin, winLane);
+                        } catch (err) {
+                            console.error(err);
+                            this.el.resultOverlay.classList.add('open');
+                        }
+                    }, 900);
+                }
+
+                _showResult(photo, diff, bet, payout, isWin, winLane) {
+                    const medals = ['🥇', '🥈', '🥉'];
+                    const list = this.el.resultList;
+                    list.innerHTML = '';
+                    this.finishOrder.forEach((lane, idx) => {
+                        const h = this.horses[lane];
+                        const row = document.createElement('div');
+                        row.className = 'result-row' + (this.betMap[lane] ? ' mine' : '');
+                        const medal = idx < 3 ? medals[idx] : (idx + 1) + '.';
+                        const time = (this.raceData[lane].finishTime / 1000).toFixed(2);
+                        const staked = this.betMap[lane];
+                        const stakeTag = staked
+                            ? (lane === winLane
+                                ? '<span class="mine-tag">派彩+' + payout + '</span>'
+                                : '<span class="mine-tag">-' + staked + '</span>')
+                            : '';
+                        row.innerHTML =
+                            '<span class="r-medal">' + medal + '</span>' +
+                            '<span class="r-num">' + (lane + 1) + '号</span>' +
+                            '<span class="r-name">' + h.name + (h.isFavorite ? ' ⭐' : '') + '</span>' +
+                            stakeTag +
+                            '<span class="r-odds">x' + h.odds.toFixed(1) + '</span>' +
+                            '<span class="r-time">' + time + 's</span>';
+                        list.appendChild(row);
+                    });
+                    this.el.resultPhoto.textContent = photo ? '📸 照片判定！前两名差距 ' + (diff / 1000).toFixed(2) + ' 秒' : '';
+                    const po = this.el.resultPayout;
+                    if (isWin) {
+                        po.className = 'result-payout win';
+                        po.textContent = '🎉 押中！押注 ' + bet + '，派彩 +' + payout + '（净赚 ' + (payout - bet) + '）';
+                    } else {
+                        po.className = 'result-payout lose';
+                        po.textContent = '😢 未押中，-' + bet;
+                    }
+                    this.el.resultOverlay.classList.add('open');
+                }
+
+                _nextRace() {
+                    this.el.resultOverlay.classList.remove('open');
+                    this._newRace();
+                    if (this.money < CONFIG.minBet) {
+                        this._showMessage('💸 破产了！点击「重新开始」获得 ' + CONFIG.rebuyAmount + ' 筹码再战', 'lose');
+                    } else {
+                        this._showMessage('新一局比赛，选择一匹马下注', '');
+                    }
+                }
+
+                _rebuy() {
+                    if (this.money >= CONFIG.minBet) return;
+                    this.stats.recordBankrupt();
+                    this._checkAchievements();
+                    this.money = CONFIG.rebuyAmount;
+                    this._saveMoney();
+                    this._updateMoneyDisplay();
+                    this._updateBetUI();
+                    this.sfx.achievement();
+                    this._showMessage('🌅 重获 ' + CONFIG.rebuyAmount + ' 筹码，卷土重来！', 'win');
+                }
+
+                _checkAchievements() {
+                    const list = this.stats.getNewAchievements();
+                    if (list.length) {
+                        this._toastQueue.push(...list);
+                        this._nextToast();
+                    }
+                    this._updateStatsUI();
+                }
+
+                _nextToast() {
+                    if (this._toastShowing || !this._toastQueue.length) return;
+                    const ach = this._toastQueue.shift();
+                    this._toastShowing = true;
+                    this.el.achToastIcon.textContent = ach.icon;
+                    this.el.achToastTitle.textContent = '🏅 ' + ach.name;
+                    this.el.achToastDesc.textContent = ach.desc;
+                    this.sfx.achievement();
+                    this.el.achToast.classList.add('show');
+                    setTimeout(() => {
+                        this.el.achToast.classList.remove('show');
+                        setTimeout(() => {
+                            this._toastShowing = false;
+                            this._nextToast();
+                        }, 500);
+                    }, 2800);
+                }
+
+                _statsItems(s) {
+                    const netColor = s.net >= 0 ? 'green' : 'red';
+                    return [
+                        { label: '总场次', value: s.totalRaces, cls: '' },
+                        { label: '押中', value: s.totalWins, cls: 'green' },
+                        { label: '未中', value: s.totalLosses, cls: 'red' },
+                        { label: '押中率', value: s.hitRate + '%', cls: 'gold' },
+                        { label: '当前连胜', value: s.currentStreak, cls: 'gold' },
+                        { label: '最佳连胜', value: s.bestStreak, cls: 'gold' },
+                        { label: '最长连输', value: s.bestLossStreak, cls: 'red' },
+                        { label: '累计回报', value: s.totalWon, cls: 'green' },
+                        { label: '累计输掉', value: s.totalLost, cls: 'red' },
+                        { label: '净赢筹码', value: s.net, cls: netColor },
+                        { label: '平均每局下注', value: s.avgBet, cls: '' },
+                        { label: '最大下注', value: s.maxBet, cls: 'gold' },
+                        { label: '最大单次派彩', value: s.maxPayout, cls: 'gold' },
+                        { label: '全押胜', value: s.allInWins, cls: 'gold' },
+                        { label: '热门押中', value: s.favoriteWins, cls: '' },
+                        { label: '爆冷胜(x8+)', value: s.upsetWins, cls: '' },
+                        { label: '冷门进前三', value: s.darkHorseTop3, cls: '' },
+                        { label: '照片判定胜', value: s.photoWins, cls: '' },
+                        { label: '破产次数', value: s.bankruptCount, cls: 'red' },
+                        { label: '资金峰值', value: s.peakMoney, cls: 'gold' },
+                        { label: '资金低谷', value: s.lowestMoney, cls: 'red' }
+                    ];
+                }
+
+                _updateStatsUI() {
+                    const s = this.stats.getStats();
+                    this.el.statWins.textContent = s.totalWins;
+                    this.el.statLosses.textContent = s.totalLosses;
+                    this.el.statRate.textContent = s.hitRate + '%';
+                    this._renderSideStats(s);
+                    this._renderSideAchievements();
+                }
+
+                _renderSideStats(s) {
+                    const items = this._statsItems(s);
+                    this.el.sideStatsGrid.innerHTML = '';
+                    for (const item of items) {
+                        const div = document.createElement('div');
+                        div.className = 'side-stats-item';
+                        div.innerHTML = '<span class="stat-label">' + item.label + '</span><span class="stat-value ' + item.cls + '">' + item.value + '</span>';
+                        this.el.sideStatsGrid.appendChild(div);
+                    }
+                }
+
+                _renderSideAchievements() {
+                    this.el.sideAchList.innerHTML = '';
+                    for (const ach of ACHIEVEMENTS) {
+                        const unlocked = this.stats.unlocked.includes(ach.id);
+                        const div = document.createElement('div');
+                        div.className = 'side-ach-item' + (unlocked ? '' : ' locked');
+                        div.innerHTML =
+                            '<span class="ach-icon">' + ach.icon + '</span>' +
+                            '<div class="ach-info">' +
+                                '<div class="ach-name">' + ach.name + '</div>' +
+                                '<div class="ach-desc">' + ach.desc + '</div>' +
+                            '</div>' +
+                            '<span class="ach-check">' + (unlocked ? '✅' : '🔒') + '</span>';
+                        this.el.sideAchList.appendChild(div);
+                    }
+                }
+
+                _openStats() {
+                    const s = this.stats.getStats();
+                    const items = this._statsItems(s);
+                    const grid = this.el.statsGrid;
+                    grid.innerHTML = '';
+                    for (const item of items) {
+                        const div = document.createElement('div');
+                        div.className = 'stats-item';
+                        div.innerHTML = '<div class="stat-label">' + item.label + '</div><div class="stat-value ' + item.cls + '">' + item.value + '</div>';
+                        grid.appendChild(div);
+                    }
+                    const list = this.el.achList;
+                    list.innerHTML = '';
+                    for (const ach of ACHIEVEMENTS) {
+                        const unlocked = this.stats.unlocked.includes(ach.id);
+                        const div = document.createElement('div');
+                        div.className = 'ach-item' + (unlocked ? '' : ' locked');
+                        div.innerHTML =
+                            '<span class="ach-icon">' + ach.icon + '</span>' +
+                            '<div class="ach-info">' +
+                                '<div class="ach-name">' + ach.name + '</div>' +
+                                '<div class="ach-desc">' + ach.desc + '</div>' +
+                            '</div>' +
+                            '<span class="ach-status">' + (unlocked ? '✅' : '🔒') + '</span>';
+                        list.appendChild(div);
+                    }
+                    this.el.statsOverlay.classList.add('open');
+                }
+
+                _openReborn() {
+                    this._rebornStep = 0;
+                    this._updateRebornUI();
+                    this.el.rebornOverlay.classList.add('open');
+                }
+
+                _closeReborn() {
+                    this._rebornStep = 0;
+                    this.el.rebornOverlay.classList.remove('open');
+                }
+
+                _updateRebornUI() {
+                    const step = this._rebornStep;
+                    this.el.dot1.className = 'reborn-dot' + (step >= 1 ? ' active' : '');
+                    this.el.dot2.className = 'reborn-dot' + (step >= 2 ? ' active' : '');
+                    this.el.dot3.className = 'reborn-dot' + (step >= 3 ? ' active' : '');
+                    const titles = ['确定要重生吗？', '真的确定吗？', '最后确认！'];
+                    const descs = [
+                        '这将清除所有游戏数据，包括资金、统计和成就。',
+                        '你的所有进度将被永久删除，无法恢复！',
+                        '点击后将立即执行，所有数据将被清除！'
+                    ];
+                    const hints = ['点击下方按钮开始确认', '再次点击继续', '最后一次点击确认重生'];
+                    const btnTexts = ['确认重生', '继续确认', '执行重生！'];
+                    this.el.rebornTitle.textContent = titles[step];
+                    this.el.rebornDesc.textContent = descs[step];
+                    this.el.rebornHint.textContent = hints[step];
+                    this.el.btnRebornConfirm.textContent = btnTexts[step];
+                }
+
+                _handleRebornClick() {
+                    this._rebornStep++;
+                    if (this._rebornStep >= 3) this._executeReborn();
+                    else this._updateRebornUI();
+                }
+
+                _executeReborn() {
+                    try {
+                        localStorage.removeItem(KEYS.money);
+                        localStorage.removeItem(KEYS.stats);
+                    } catch (_) {}
+                    this.money = CONFIG.initialMoney;
+                    this.betMap = {};
+                    this.activeLane = -1;
+                    this.stats = new StatsManager();
+                    this._clearCountdown();
+                    if (this.state === 'racing') cancelAnimationFrame(this._rafId);
+                    this._newRace();
+                    this._updateMoneyDisplay();
+                    this._updateStatsUI();
+                    this._closeReborn();
+                    this._showMessage('💀 重生成功！获得 ' + CONFIG.initialMoney + ' 筹码', 'win');
+                }
+
+                _showMessage(text, type = '') {
+                    this.el.message.textContent = text;
+                    this.el.message.className = 'message';
+                    if (type) this.el.message.classList.add(type);
+                    this.el.message.classList.remove('pop');
+                    void this.el.message.offsetWidth;
+                    this.el.message.classList.add('pop');
+                }
+            }
+
+            const game = new Game();
+            window.__horseRacing = game;
+
+            console.log('🏇 赛马场已加载！');
+            console.log('💡 快捷键: [1-7]选马 [Space]开赛 [M]音效 [ESC]关闭弹窗');
+
+        })();
+    </script>
+
+</body>
+</html>
