@@ -101,6 +101,8 @@
     color: var(--white);
     text-shadow: 0 .5em 1em rgba(0, 0, 0, .6);
   }
+  /* 深色模式下 --white 被反转为近黑色，标题改用白色保证可读 */
+  :root[data-theme="dark"] .home .title { color: #fff; }
   .home .operations {
     display: flex;
     flex-direction: column;
