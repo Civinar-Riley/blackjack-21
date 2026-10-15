@@ -1,10 +1,10 @@
-# main 推 → 部署 21 点主站；arcade 推 → 主站 + /arcade/ 游戏厅一起部署
-# 上线地址：https://civinar-riley.github.io/blackjack-21/ 与 https://civinar-riley.github.io/blackjack-21/arcade/
+# main 推 → 构建部署游戏厅主站
+# 上线地址：https://civinar-riley.github.io/blackjack-21/
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, arcade]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -20,33 +20,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout main
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          path: main
-      - name: Checkout arcade
-        uses: actions/checkout@v4
-        with:
-          ref: arcade
-          path: arcade
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: main/package-lock.json
-      - name: Build 主站 (main)
-        run: cd main && npm ci && npm run build
-      - name: Build 游戏厅 (arcade)
-        run: cd arcade && npm ci && npm run build
-      - name: Assemble
-        run: |
-          mkdir -p _site/arcade
-          cp -r main/dist/* _site/
-          cp -r arcade/dist/* _site/arcade/
+      - name: Build
+        run: npm ci && npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: dist
 
   deploy:
     needs: build
