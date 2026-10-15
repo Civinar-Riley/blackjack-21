@@ -90,7 +90,8 @@ async function playGame(i) {
     const frame = $('#gameFrame');
     $('#playerTip').textContent = '🎮 加载中…';
     try {
-        const resp = await fetch(`games/${g.file}`);
+        /* 游戏文件名无哈希，拼构建时间戳破缓存，保证每次部署后拿到最新版 */
+        const resp = await fetch(`games/${g.file}?b=${__HALL_BUILD__}`);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const html = await resp.text();
         knownFrames.add(frame.contentWindow);
