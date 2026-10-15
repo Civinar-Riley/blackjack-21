@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>连连看</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --primary-color: #0088ff;
+    --primary-color-hover: rgba(0, 136, 255, 0.8);
+    --primary-text-color: #333;
+    --secondary-text-color: #666;
+    --tertiary-text-color: #999;
+    --border-color: #f1f1f1;
+    --disabled-color: #e1e1e1;
+    --shadow-color: #888;
+    --finished-color-bg: #cdcee5;
+    --white: #fff;
+    --black: #000;
+    --red: #f40;
+    --green: #4CAF50;
+    --green-hover: #45a049;
+    --orange: #ff9800;
+    --orange-hover: #fb8c00;
+    --bg-gradient: linear-gradient(to bottom, #74ebd5, #9face6);
+    --box-bg: #fff;
+    --box-shadow: 0 2px 4px rgba(0, 0, 0, .15);
+    --modal-bg: #fff;
+    --header-bg: var(--primary-color);
+    --theme-btn-bg: rgba(255, 255, 255, .5);
+    --theme-btn-color: #333;
+  }
+
+  :root[data-theme="dark"] {
+    --primary-color: #4ea1ff;
+    --primary-color-hover: rgba(78, 161, 255, 0.8);
+    --primary-text-color: #e8e8e8;
+    --secondary-text-color: #bbb;
+    --tertiary-text-color: #888;
+    --border-color: #2c2c2c;
+    --disabled-color: #3a3a3a;
+    --shadow-color: #000;
+    --finished-color-bg: #2a3a55;
+    --white: #1f1f1f;
+    --black: #f0f0f0;
+    --red: #ff5b5b;
+    --green: #5cb85c;
+    --green-hover: #4e9c4e;
+    --orange: #f0a500;
+    --orange-hover: #d69500;
+    --bg-gradient: linear-gradient(to bottom, #1a1d2e, #2a2e4a);
+    --box-bg: #2a2a2a;
+    --box-shadow: 0 2px 6px rgba(0, 0, 0, .5);
+    --modal-bg: #2c2c2c;
+    --header-bg: #1f3a5f;
+    --theme-btn-bg: rgba(0, 0, 0, .35);
+    --theme-btn-color: #eee;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+      'Helvetica Neue', Arial, 'Noto Sans', sans-serif,
+      'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    overflow: hidden;
+    background: var(--bg-gradient);
+    color: var(--primary-text-color);
+    user-select: none;
+    -webkit-user-select: none;
+    transition: background-color .3s ease, color .3s ease;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* ===== Home ===== */
+  .home {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-gradient);
+    overflow: hidden;
+    padding: 2rem 1rem;
+  }
+  .home .title {
+    font-size: clamp(2rem, 8vw, 4rem);
+    font-weight: bold;
+    color: var(--white);
+    text-shadow: 0 .5em 1em rgba(0, 0, 0, .6);
+  }
+  .home .operations {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.2em;
+  }
+  .home .btn {
+    width: max(80%, 18rem);
+    line-height: 2.2;
+    font-size: 1.4rem;
+    border: none;
+    border-radius: .5em;
+    color: var(--white);
+    cursor: pointer;
+    transition: transform .2s, background-color .3s ease;
+    box-shadow: 0 .4em .8em rgba(0, 0, 0, .2);
+  }
+  .home .btn-start { background-color: var(--green); }
+  .home .btn-start:hover { background-color: var(--green-hover); transform: scale(1.04); }
+  .home .btn-settings { background-color: var(--orange); }
+  .home .btn-settings:hover { background-color: var(--orange-hover); transform: scale(1.04); }
+
+  /* ===== Header ===== */
+  .header {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 64px;
+    flex-shrink: 0;
+  }
+  .header .container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: .6rem;
+    padding: .4rem .6rem;
+    border-radius: .35rem;
+    background-color: var(--primary-color);
+  }
+  .header .btn {
+    border: 0;
+    background-color: transparent;
+    height: 1.6rem;
+    padding: 0 .6rem;
+    border-radius: .25rem;
+    color: var(--white);
+    cursor: pointer;
+    font-size: .9rem;
+  }
+  .header .btn:hover:not(.disabled) { background-color: rgba(255,255,255,.15); }
+  .header .btn.disabled { opacity: .5; cursor: not-allowed; }
+  .header .btn-props {
+    position: relative;
+    border: 1px solid var(--white);
+  }
+  .header .btn-props .value {
+    position: absolute;
+    right: -.5rem;
+    top: -.5rem;
+    min-width: 1rem;
+    height: 1rem;
+    padding: 0 .15rem;
+    text-align: center;
+    line-height: 1rem;
+    border-radius: 50%;
+    background-color: var(--red);
+    font-size: .75rem;
+  }
+
+  /* ===== Game main ===== */
+  .link-game-main {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    flex: 1 1 auto;
+    overflow: hidden;
+    position: relative;
+  }
+  #boardWrap {
+    position: relative;
+    overflow: visible;
+  }
+  #boardWrap.boundary {
+    border: .35rem dashed var(--primary-color);
+    border-radius: .8rem;
+  }
+  #layerBoxes, #layerLines {
+    position: absolute;
+    left: 0; top: 0;
+    width: 100%;
+    height: 100%;
+  }
+  #layerLines { pointer-events: none; }
+
+  .box {
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border-radius: .25rem;
+    background-color: var(--box-bg);
+    box-shadow: var(--box-shadow);
+    transition: background-color .15s ease, box-shadow .15s ease, transform .12s ease;
+    font-size: 0;
+    line-height: 1;
+  }
+  .box .emoji {
+    font-size: 1em;
+    pointer-events: none;
+    transition: transform .12s ease;
+  }
+  .box.empty {
+    background: transparent;
+    box-shadow: none;
+    cursor: default;
+    visibility: hidden;
+  }
+  .box.checked {
+    background-color: rgba(126, 201, 109, .8);
+    box-shadow: 0 0 0 3px #7ec96d, 0 0 14px rgba(126, 201, 109, .9);
+    z-index: 2;
+  }
+  .box.checked .emoji { transform: scale(1.1); }
+  .box.error {
+    background-color: #ff8800;
+    box-shadow: 0 0 0 3px #f40;
+    animation: shake .4s;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translate(0, 0); }
+    20% { transform: translate(-4px, 0); }
+    40% { transform: translate(4px, 0); }
+    60% { transform: translate(-4px, 0); }
+    80% { transform: translate(4px, 0); }
+  }
+
+  /* ===== Modal ===== */
+  .modal-mask {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 999;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, .35);
+  }
+  .modal-mask.hidden { display: none; }
+
+  .modal {
+    width: min(30rem, 90vw);
+    max-height: 90vh;
+    overflow-y: auto;
+    background-color: var(--modal-bg);
+    color: var(--primary-text-color);
+    border-radius: .6rem;
+    box-shadow: 0 .4rem 1rem var(--shadow-color);
+    animation: pop .25s ease;
+  }
+  @keyframes pop {
+    from { transform: scale(.85); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .modal-setting .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 2.75rem;
+    padding: 0 1rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .modal-setting .modal-header .title { font-size: 1rem; font-weight: 700; }
+  .modal-setting .modal-header .btn-close {
+    border: 0; background: transparent; cursor: pointer;
+    font-size: 1.2rem; color: var(--tertiary-text-color);
+  }
+  .modal-setting .wrapper { padding: 1.2rem; }
+  .modal-setting .list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    list-style: none;
+  }
+  .modal-setting .item {
+    width: 9.5rem;
+    padding: .8rem;
+    border-radius: .5rem;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: transform .12s ease;
+  }
+  .modal-setting .item:hover { transform: translateY(-3px); border-color: var(--primary-color); }
+  .modal-setting .item.current {
+    border-color: var(--primary-color);
+    background-color: var(--primary-color);
+    color: var(--white);
+  }
+  .modal-setting .item.current .label { color: rgba(255, 255, 255, .7); }
+  .modal-setting .item.current .value { color: var(--white); }
+  .modal-setting .row { display: flex; align-items: center; line-height: 1.9; justify-content: space-between; }
+  .modal-setting .row .label { color: var(--tertiary-text-color); font-size: .85rem; }
+  .modal-setting .row .value { font-weight: 700; }
+
+  .modal-finished .wrapper {
+    position: relative;
+    padding: 2.2rem .6rem 1.2rem .6rem;
+    background-color: var(--finished-color-bg);
+    border-radius: .6rem;
+    text-align: center;
+  }
+  .modal-finished .star { font-size: 3rem; margin-bottom: .5rem; }
+  .modal-finished .level-text { color: var(--primary-color); font-weight: 700; margin: .3rem 0 1rem; }
+  .modal-finished .operations {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  .modal-finished .btn {
+    padding: .35rem .7rem;
+    border-radius: .3rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--modal-bg);
+    color: var(--primary-text-color);
+    cursor: pointer;
+  }
+  .modal-finished .btn-refresh {
+    color: var(--white);
+    border-color: var(--primary-color);
+    background-color: var(--primary-color);
+  }
+
+  /* Loading overlay */
+  .loading {
+    position: fixed;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0, 0, 0, .45);
+    color: var(--white);
+    font-size: 1.1rem;
+    z-index: 1000;
+  }
+  .loading.hidden { display: none; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    left: 50%;
+    top: 15%;
+    transform: translateX(-50%);
+    z-index: 1002;
+    padding: .5rem 1rem;
+    border-radius: .4rem;
+    background: rgba(0, 0, 0, .7);
+    color: #fff;
+    font-size: .95rem;
+    opacity: 0;
+    transition: opacity .3s ease;
+    pointer-events: none;
+  }
+
+  /* ===== Theme toggle ===== */
+  #themeToggle {
+    position: fixed;
+    right: 1rem;
+    top: 1rem;
+    z-index: 1001;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 0;
+    border-radius: 50%;
+    background-color: var(--theme-btn-bg);
+    color: var(--theme-btn-color);
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .25);
+    transition: transform .2s ease, background-color .3s ease;
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+  #themeToggle:hover { transform: rotate(25deg) scale(1.08); }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<button id="themeToggle" title="切换主题" aria-label="切换深浅主题"></button>
+
+<script>
+'use strict';
+
+/* ============================================================
+ * Config & Types
+ * ============================================================ */
+const Level = { easy: 0, middle: 1, hard: 2, extreme: 3, nightmare: 4 };
+const GameStatus = {
+  finished: 0,
+  playing: 1,
+  paused: 2,
+  complete: 3,
+  defeat: 4,
+  inTheAnimation: 5
+};
+const LINK_GAME_LEVEL = 'LINK_GAME_LEVEL';
+const LINK_GAME_THEME = 'LINK_GAME_THEME';
+
+/* ============================================================
+ * Theme
+ * ============================================================ */
+function getStoredTheme() {
+  try {
+    const v = localStorage.getItem(LINK_GAME_THEME);
+    return v === 'dark' ? 'dark' : 'light';
+  } catch (e) { return 'light'; }
+}
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  const next = getStoredTheme() === 'dark' ? 'light' : 'dark';
+  try { localStorage.setItem(LINK_GAME_THEME, next); } catch (e) {}
+  applyTheme(next);
+}
+
+// 最大难度 totalOfItems=35，留一倍余量即可；从 1 开始，seq=0 保留表示空格
+const itemSequences = Array.from({ length: 64 }, (_, i) => i + 1);
+
+/* 素材库：emoji / 扑克花色 / 几何符号，仔细挑选保证视觉上易区分 */
+const EMOJI_POOL = [
+  // 水果
+  '🍎','🍌','🍇','🍉','🍊','🍋','🍓','🍒','🍑','🥝','🍍','🥥','🍈','🍐',
+  // 动物
+  '🐶','🐱','🐼','🐨','🦊','🐰','🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🦄','🐝','🦋','🐢','🐬',
+  // 表情
+  '😀','😎','😍','🤣','😇','🥳','😴','😡','🤯','🤠','👻','💀','🤡','👽','🤖','💩','💩',
+  // 自然 / 天文
+  '⭐','🌟','✨','🔥','💧','🌈','☀️','🌙','❄️','🍀','🌸','🌹','🌻','🌵','🌲','🌳',
+  // 球类 / 运动
+  '⚽','🏀','🏈','⚾','🎾','🏐','🎱','🏓','🏸','🎯','🎮','🏆','🥇','🏀',
+  // 交通
+  '🚗','🚕','🚙','🚌','🚑','🚒','🚜','🚲','✈️','🚀','🛸','⛵','🚤','🚂',
+  // 食物
+  '🍕','🍔','🍟','🌭','🥪','🌮','🌯','🥙','🍿','🍩','🍪','🎂','🍰','🍫','🍬','🍭','☕','🍵','🍦','🥡',
+  // 乐器
+  '🎸','🎹','🎺','🎻','🥁','🎷','🎤','🎧',
+  // 爱心
+  '❤️','🧡','💛','💚','💙','💜','🖤','💖','💗','💘','💝','💕',
+  // 节庆
+  '🎁','🎀','🎉','🎊','🎈','🎍','🎎','🏮','🎆','🎇','🎐',
+  // 植物
+  '🌱','🌿','☘️','🍃','🍂','🌾','🌷','🌼','💐','🌻','🌵','🌴',
+  // 文具 / 工具
+  '💡','🔦','📖','📚','✏️','✒️','📝','📌','🔑','🔒','🔧','🔨','⚙️','🧲',
+  // 符号
+  '✅','❌','✔️','➕','➖','➗','✖️','💯','🔆','💢','💥','💫','💦','💨',
+  // 扑克花色 简版
+  '♠️','♥️','♦️','♣️','🃏','🀄','☯️','☮️','✝️','☪️','🕉️','☸️','✡️','🔯','🕎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','🆗','🆕','🆒','🆓'
+];
+
+function pickEmojis(n) {
+  // 源池里有重复 emoji（💩🏀🌻🌵），必须去重，否则两个不同 seq 会拿到相同图案
+  const pool = [...new Set(EMOJI_POOL)];
+  const out = [];
+  while (out.length < n && pool.length) {
+    const idx = Math.floor(Math.random() * pool.length);
+    out.push(pool.splice(idx, 1)[0]);
+  }
+  return out; // 素材池远大于 n（≤32），不会不足
+}
+
+/* ============================================================
+ * Utils
+ * ============================================================ */
+function shuffle(input) {
+  const arr = input.slice();
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function sleep(delay) {
+  return new Promise(resolve => setTimeout(resolve, delay));
+}
+
+function isComplete(boxes) {
+  return boxes.every(box => box.seq === 0);
+}
+
+function getPosition(val, size) {
+  return (val - 1) * size;
+}
+
+function getFromPosition(from, to, size) {
+  const half = size / 2;
+  if (from.x === to.x) {
+    return [
+      getPosition(from.x, size) + half,
+      getPosition(from.y, size) + (from.y > to.y ? 0 : size)
+    ];
+  }
+  if (from.y === to.y) {
+    return [
+      getPosition(from.x, size) + (from.x > to.x ? 0 : size),
+      getPosition(from.y, size) + half
+    ];
+  }
+  return [];
+}
+
+function getToPosition(from, to, size) {
+  const half = size / 2;
+  if (from.x === to.x) {
+    return [
+      getPosition(from.x, size) + half,
+      getPosition(to.y, size) + (from.y > to.y ? size : 0)
+    ];
+  }
+  if (from.y === to.y) {
+    return [
+      getPosition(to.x, size) + (from.x > to.x ? size : 0),
+      getPosition(to.y, size) + half
+    ];
+  }
+  return [];
+}
+
+function getSize(row, column, width, height) {
+  const xCount = column + 1;
+  const yCount = row + 1;
+  const w = Math.floor(width / xCount);
+  const h = Math.floor(height / yCount);
+  const min = Math.min(w, h);
+  const max = Math.max(w, h);
+  if (min === max) return Math.max(16, min);
+  if (max * xCount > width || max * yCount > height) return Math.max(16, min);
+  return Math.max(16, max);
+}
+
+/* ============================================================
+ * Path finding（网格索引重写：O(路径长) 查找，替代全盘 filter 扫描）
+ * ============================================================ */
+const grid = new Map(); // "x,y" -> box，与 app.state.boxes 保持同步
+const key = (x, y) => x + ',' + y;
+
+function rebuildGrid(boxes) {
+  grid.clear();
+  for (const b of boxes) grid.set(key(b.x, b.y), b);
+}
+
+// 有边界模式：棋盘外一律视为占用；无边界模式：外圈一圈可通行（等价于原来的幽灵格子）
+function isEmptyFnFrom(map, li) {
+  return (x, y) => {
+    if (li.useBoundary && (x < 1 || x > li.column || y < 1 || y > li.row)) return false;
+    const b = map.get(key(x, y));
+    return !b || b.seq === 0;
+  };
+}
+
+function lineClear(x1, y1, x2, y2, isEmptyFn) {
+  if (x1 === x2) {
+    const min = Math.min(y1, y2);
+    const max = Math.max(y1, y2);
+    for (let y = min + 1; y < max; y++) if (!isEmptyFn(x1, y)) return false;
+    return true;
+  }
+  if (y1 === y2) {
+    const min = Math.min(x1, x2);
+    const max = Math.max(x1, x2);
+    for (let x = min + 1; x < max; x++) if (!isEmptyFn(x, y1)) return false;
+    return true;
+  }
+  return false;
+}
+
+// p、q 之间 ≤1 个拐角：返回中间拐点数组（直连为 []），不可达返回 null
+function findOneCorner(px, py, qx, qy, isEmptyFn) {
+  if ((px === qx || py === qy) && lineClear(px, py, qx, qy, isEmptyFn)) return [];
+  for (const [cx, cy] of [[px, qy], [qx, py]]) {
+    if (isEmptyFn(cx, cy) &&
+        lineClear(px, py, cx, cy, isEmptyFn) &&
+        lineClear(qx, qy, cx, cy, isEmptyFn)) {
+      return [{ x: cx, y: cy }];
+    }
+  }
+  return null;
+}
+
+// a、b 之间 ≤2 个拐角：返回中间拐点数组或 null
+function findPath(a, b, li, isEmptyFn) {
+  const one = findOneCorner(a.x, a.y, b.x, b.y, isEmptyFn);
+  if (one) return one;
+  const minX = li.useBoundary ? 1 : 0;
+  const minY = li.useBoundary ? 1 : 0;
+  const maxX = li.useBoundary ? li.column : li.column + 1;
+  const maxY = li.useBoundary ? li.row : li.row + 1;
+  for (const [cur, other] of [[a, b], [b, a]]) {
+    for (let x = minX; x <= maxX; x++) {
+      if (x === cur.x) continue;
+      if (!isEmptyFn(x, cur.y) || !lineClear(cur.x, cur.y, x, cur.y, isEmptyFn)) continue;
+      const rest = findOneCorner(x, cur.y, other.x, other.y, isEmptyFn);
+      if (rest) return [{ x, y: cur.y }, ...rest];
+    }
+    for (let y = minY; y <= maxY; y++) {
+      if (y === cur.y) continue;
+      if (!isEmptyFn(cur.x, y) || !lineClear(cur.x, cur.y, cur.x, y, isEmptyFn)) continue;
+      const rest = findOneCorner(cur.x, y, other.x, other.y, isEmptyFn);
+      if (rest) return [{ x: cur.x, y }, ...rest];
+    }
+  }
+  return null;
+}
+
+function canIRemoveThem(checkedItems, li) {
+  const [a, b] = checkedItems;
+  if (a.seq !== b.seq || a.seq === 0) return [false, []];
+  const corners = findPath(a, b, li, isEmptyFnFrom(grid, li));
+  if (!corners) return [false, []];
+  return [true, [a, ...corners, b]];
+}
+
+// 按 seq 分组后组内找可消对，避免全盘两两扫描
+function findAnyPair(boxes, li) {
+  const bySeq = new Map();
+  for (const b of boxes) {
+    if (b.seq === 0) continue;
+    if (!bySeq.has(b.seq)) bySeq.set(b.seq, []);
+    bySeq.get(b.seq).push(b);
+  }
+  const isEmptyFn = isEmptyFnFrom(grid, li);
+  for (const list of bySeq.values()) {
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        if (findPath(list[i], list[j], li, isEmptyFn)) return [list[i], list[j]];
+      }
+    }
+  }
+  return null;
+}
+
+/* ============================================================
+ * Box generation（保证可解）
+ * ============================================================ */
+function makeRandomBoxes(levelInfo) {
+  const { row, column, totalOfItems } = levelInfo;
+  const max = row * column;
+  const seqs = shuffle(itemSequences).slice(0, totalOfItems);
+  let items = [];
+  let repeat = Math.floor(max / totalOfItems);
+  while (repeat-- > 0) items = items.concat(shuffle(seqs));
+  items = items.slice(0, max);
+  return items.map((seq, index) => ({
+    seq,
+    x: index % column + 1,
+    y: Math.floor(index / column) + 1,
+    status: 'default'
+  }));
+}
+
+// 兜底盘面：每对水平相邻，任意顺序都可直接消除，百分百可解
+function makeDominoBoxes(levelInfo) {
+  const { row, column, totalOfItems } = levelInfo;
+  const seqs = shuffle(itemSequences).slice(0, totalOfItems);
+  const boxes = [];
+  let k = 0;
+  for (let y = 1; y <= row; y++) {
+    for (let x = 1; x + 1 <= column; x += 2) {
+      const seq = seqs[k++ % seqs.length];
+      boxes.push({ seq, x, y, status: 'default' });
+      boxes.push({ seq, x: x + 1, y, status: 'default' });
+    }
+  }
+  return boxes;
+}
+
+// 贪心模拟通关：消不动时允许少量“重排”继续（与游戏内免费自动重排一致，
+// 保证玩家永远不会卡死）；多轮随机顺序贪心，任一轮清空即通过
+function isSolvable(boxes, levelInfo, passes = 2) {
+  for (let p = 0; p < passes; p++) {
+    const sim = boxes.map(b => ({ x: b.x, y: b.y, seq: b.seq }));
+    const simGrid = new Map();
+    for (const b of sim) simGrid.set(key(b.x, b.y), b);
+    const isEmptyFn = isEmptyFnFrom(simGrid, levelInfo);
+    let rearranges = 0;
+    let remaining = sim.length;
+    while (remaining > 0) {
+      const pair = findPairIn(sim, levelInfo, isEmptyFn);
+      if (pair) {
+        pair[0].seq = 0;
+        pair[1].seq = 0;
+        remaining -= 2;
+        continue;
+      }
+      if (++rearranges > 5) break;
+      // 模拟死局重排：重洗剩余 seq 直到出现可消对
+      const items = sim.filter(b => b.seq !== 0);
+      let ok = false;
+      for (let a = 0; a < 50 && !ok; a++) {
+        const seqs = shuffle(items.map(b => b.seq));
+        items.forEach((it, i) => { it.seq = seqs[i]; });
+        if (findPairIn(sim, levelInfo, isEmptyFn)) ok = true;
+      }
+      if (!ok) break;
+    }
+    if (remaining === 0) return true;
+  }
+  return false;
+}
+
+// 单次贪心的找对：随机起点扫描各 seq 分组
+function findPairIn(sim, levelInfo, isEmptyFn) {
+  const bySeq = new Map();
+  for (const b of sim) {
+    if (b.seq === 0) continue;
+    if (!bySeq.has(b.seq)) bySeq.set(b.seq, []);
+    bySeq.get(b.seq).push(b);
+  }
+  const groups = shuffle([...bySeq.values()]);
+  for (let gi = 0; gi < groups.length; gi++) {
+    const list = groups[gi];
+    const start = Math.floor(Math.random() * list.length);
+    for (let d = 0; d < list.length; d++) {
+      const i = (start + d) % list.length;
+      for (let j = i + 1; j < list.length; j++) {
+        if (findPath(list[i], list[j], levelInfo, isEmptyFn)) return [list[i], list[j]];
+      }
+    }
+  }
+  return null;
+}
+
+function genBoxes(levelInfo) {
+  const deadline = performance.now() + 500;
+  while (performance.now() < deadline) {
+    const boxes = makeRandomBoxes(levelInfo);
+    if (isSolvable(boxes, levelInfo)) return boxes;
+  }
+  return makeDominoBoxes(levelInfo);
+}
+
+/* ============================================================
+ * App state
+ * ============================================================ */
+const app = {
+  state: {
+    gameStatus: GameStatus.finished,
+    currentLevel: Level.easy,
+    boxes: [],
+    levelInfo: null,
+    areaSize: { width: 0, height: 0 },
+    emojiMap: {},
+    rearrangement: 0,
+    tips: 0,
+    pendingCheck: false,
+    animating: false,
+    sessionId: 0
+  },
+  els: {}
+};
+
+function buildGameLevels() {
+  const width = window.innerWidth;
+  const height = window.innerHeight - 80;
+  const isVertical = width < height;
+
+  const list = [
+    {
+      level: Level.easy,
+      text: '简单',
+      row: 8, column: 8,
+      totalOfItems: 8,
+      size: getSize(8, 8, width, height),
+      useBoundary: false,
+      rearrangement: 5, tips: 5
+    },
+    {
+      level: Level.middle,
+      text: '中等',
+      row: isVertical ? 10 : 12,
+      column: isVertical ? 12 : 10,
+      totalOfItems: 15,
+      size: getSize(isVertical ? 10 : 12, isVertical ? 12 : 10, width, height),
+      useBoundary: false,
+      rearrangement: 5, tips: 5
+    },
+    {
+      level: Level.hard,
+      text: '困难',
+      row: isVertical ? 16 : 12,
+      column: isVertical ? 12 : 16,
+      totalOfItems: 32,
+      size: getSize(isVertical ? 16 : 12, isVertical ? 12 : 16, width, height),
+      useBoundary: false,
+      rearrangement: 5, tips: 5
+    },
+    {
+      level: Level.extreme,
+      text: '地狱',
+      row: isVertical ? 16 : 12,
+      column: isVertical ? 12 : 16,
+      totalOfItems: 32,
+      size: getSize(isVertical ? 16 : 12, isVertical ? 12 : 16, width, height),
+      useBoundary: true,
+      rearrangement: 5, tips: 5
+    },
+    {
+      level: Level.nightmare,
+      text: '炼狱',
+      row: isVertical ? 20 : 14,
+      column: isVertical ? 14 : 20,
+      totalOfItems: 35,
+      size: getSize(isVertical ? 20 : 14, isVertical ? 14 : 20, width, height),
+      useBoundary: true,
+      rearrangement: 5, tips: 5
+    }
+  ];
+  return list;
+}
+
+function getCurrentLevelInfo() {
+  const list = buildGameLevels();
+  return list.find(it => it.level === app.state.currentLevel);
+}
+
+function computeAreaSize() {
+  const li = app.state.levelInfo;
+  // 有边界模式没有可通行的外圈，不再多留一格，避免棋盘右侧/下方出现空条
+  const extra = li.useBoundary ? 0 : 1;
+  return {
+    width: (li.column + extra) * li.size,
+    height: (li.row + extra) * li.size
+  };
+}
+
+function loadSavedLevel() {
+  try {
+    const v = parseInt(localStorage.getItem(LINK_GAME_LEVEL), 10);
+    if (!isNaN(v) && v >= 0 && v <= 4) app.state.currentLevel = v;
+  } catch (e) {}
+}
+function saveLevel(v) {
+  try { localStorage.setItem(LINK_GAME_LEVEL, String(v)); } catch (e) {}
+}
+
+/* ============================================================
+ * Rendering
+ * ============================================================ */
+function el(tag, cls, html) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (html != null) e.innerHTML = html;
+  return e;
+}
+
+function render() {
+  const root = app.els.root;
+  root.innerHTML = '';
+  const s = app.state.gameStatus;
+
+  if (s === GameStatus.finished) {
+    app.els.rearrangeBtn = null;
+    app.els.tipsBtn = null;
+    renderHome(root);
+    return;
+  }
+
+  // header + main
+  const header = el('header', 'header');
+  const container = el('div', 'container');
+  container.appendChild(makeBtn('退出', '', () => {
+    app.state.gameStatus = GameStatus.finished;
+    render();
+  }));
+  container.appendChild(makeBtn('游戏设置', '', () => showSettingModal()));
+  app.els.rearrangeBtn = makeBtn('重排', 'btn-props btn-rearrange', handleRearrange, true);
+  container.appendChild(app.els.rearrangeBtn);
+  app.els.tipsBtn = makeBtn('提示', 'btn-props btn-tips', handleTips, true);
+  container.appendChild(app.els.tipsBtn);
+  header.appendChild(container);
+  root.appendChild(header);
+
+  const main = el('main', 'link-game-main');
+  root.appendChild(main);
+  renderBoard(main);
+
+  updatePropsDisplay();
+}
+
+function makeBtn(text, cls, onClick, withValue) {
+  const b = el('button', ('btn ' + (cls || '')).trim(), text);
+  if (withValue) {
+    const v = el('span', 'value', '0');
+    b.appendChild(v);
+    b._valueEl = v;
+  }
+  b.addEventListener('click', onClick);
+  return b;
+}
+
+function renderHome(root) {
+  const home = el('div', 'home');
+  home.appendChild(el('h1', 'title', '连连看'));
+  const ops = el('section', 'operations');
+  const startBtn = el('button', 'btn btn-start', '开始游戏');
+  startBtn.addEventListener('click', handleStart);
+  ops.appendChild(startBtn);
+  const settingsBtn = el('button', 'btn btn-settings', '难度设置');
+  settingsBtn.addEventListener('click', () => showSettingModal(true));
+  ops.appendChild(settingsBtn);
+  home.appendChild(ops);
+  root.appendChild(home);
+}
+
+let boxEls = {};
+let layerLinesEl = null;
+let layerBoxesEl = null;
+let boardWrapEl = null;
+
+function renderBoard(main) {
+  main.innerHTML = '';
+  boxEls = {};
+
+  boardWrapEl = el('div', 'board-wrap');
+  boardWrapEl.id = 'boardWrap';
+
+  layerBoxesEl = el('div');
+  layerBoxesEl.id = 'layerBoxes';
+
+  // 外扩一层 overflow-visible 的 svg（用于边界外的连线）
+  layerLinesEl = elNS('http://www.w3.org/2000/svg', 'svg');
+  layerLinesEl.id = 'layerLines';
+  layerLinesEl.style.position = 'absolute';
+  layerLinesEl.style.left = '0';
+  layerLinesEl.style.top = '0';
+  layerLinesEl.style.width = '100%';
+  layerLinesEl.style.height = '100%';
+  layerLinesEl.style.overflow = 'visible';
+  layerLinesEl.style.pointerEvents = 'none';
+
+  boardWrapEl.appendChild(layerBoxesEl);
+  boardWrapEl.appendChild(layerLinesEl);
+  main.appendChild(boardWrapEl);
+
+  for (const box of app.state.boxes) {
+    const item = el('div', 'box' + (box.seq === 0 ? ' empty' : ''));
+    item.dataset.x = box.x;
+    item.dataset.y = box.y;
+    if (box.seq !== 0) {
+      const emoji = app.state.emojiMap[box.seq] || '❓';
+      item.appendChild(el('span', 'emoji', emoji));
+    }
+    layerBoxesEl.appendChild(item);
+    boxEls[key(box.x, box.y)] = item;
+  }
+
+  // 事件委托：棋盘容器统一监听一次 click
+  layerBoxesEl.addEventListener('click', e => {
+    const t = e.target.closest('.box');
+    if (!t || !t.dataset.x) return;
+    const box = grid.get(key(+t.dataset.x, +t.dataset.y));
+    if (box) handleCheck(box);
+  });
+
+  layoutBoard();
+}
+
+// 只更新尺寸相关样式，不重建 DOM（resize 时调用）
+function layoutBoard() {
+  const li = app.state.levelInfo;
+  const size = li.size;
+  const area = app.state.areaSize;
+  const pad = li.useBoundary ? 0 : Math.max(size, 24);
+
+  boardWrapEl.className = 'board-wrap' + (li.useBoundary ? ' boundary' : '');
+  boardWrapEl.style.width = area.width + 'px';
+  boardWrapEl.style.height = area.height + 'px';
+  boardWrapEl.style.margin = pad + 'px';
+  boardWrapEl.style.position = 'relative';
+
+  layerLinesEl.style.left = -pad + 'px';
+  layerLinesEl.style.top = -pad + 'px';
+  layerLinesEl.style.width = (area.width + pad * 2) + 'px';
+  layerLinesEl.style.height = (area.height + pad * 2) + 'px';
+  layerLinesEl.setAttribute('viewBox', `${-pad} ${-pad} ${area.width + pad * 2} ${area.height + pad * 2}`);
+
+  const fontSize = Math.floor(size * 0.6);
+  for (const box of app.state.boxes) {
+    const item = boxEls[key(box.x, box.y)];
+    if (!item) continue;
+    item.style.width = size + 'px';
+    item.style.height = size + 'px';
+    item.style.left = getPosition(box.x, size) + 'px';
+    item.style.top = getPosition(box.y, size) + 'px';
+    item.style.fontSize = fontSize + 'px';
+  }
+}
+
+function elNS(ns, tag) {
+  return document.createElementNS(ns, tag);
+}
+
+function updateBoxStyle(box) {
+  const item = boxEls[key(box.x, box.y)];
+  if (!item) return;
+  item.classList.remove('checked', 'error');
+  if (box.seq === 0) {
+    item.classList.add('empty');
+    item.innerHTML = '';
+  } else {
+    item.classList.remove('empty');
+    if (!item.querySelector('.emoji')) {
+      const emoji = app.state.emojiMap[box.seq] || '❓';
+      const span = el('span', 'emoji', emoji);
+      item.appendChild(span);
+    } else {
+      item.querySelector('.emoji').textContent = app.state.emojiMap[box.seq] || '❓';
+    }
+  }
+  if (box.status === 'checked') item.classList.add('checked');
+  if (box.status === 'error') item.classList.add('error');
+}
+
+function updateAllBoxes() {
+  for (const box of app.state.boxes) updateBoxStyle(box);
+}
+
+function updatePropsDisplay() {
+  const entries = [
+    [app.els.rearrangeBtn, app.state.rearrangement],
+    [app.els.tipsBtn, app.state.tips]
+  ];
+  for (const [b, value] of entries) {
+    if (!b) continue;
+    if (b._valueEl) b._valueEl.textContent = value;
+    b.classList.toggle('disabled', value <= 0 || app.state.gameStatus !== GameStatus.playing);
+  }
+}
+
+/* ============================================================
+ * SVG connection animation (复刻 LinkGame.vue)
+ * ============================================================ */
+function drawConnection(items) {
+  while (layerLinesEl.firstChild) layerLinesEl.removeChild(layerLinesEl.firstChild);
+
+  if (!items || items.length < 2) return;
+
+  const li = app.state.levelInfo;
+  const size = li.size;
+  const half = size / 2;
+
+  const lineColor = getComputedStyle(document.documentElement)
+    .getPropertyValue('--primary-color').trim() || '#0088ff';
+
+  // build path
+  const it = items[Symbol.iterator]();
+  let first = it.next().value;
+  let next = it.next().value;
+  let d = `M ${getFromPosition(first, next, size).join(' ')}`;
+  d += ` L ${getToPosition(first, next, size).join(' ')}`;
+
+  let cur = next;
+  let nx = it.next();
+  while (!nx.done && nx.value) {
+    const nextItem = nx.value;
+    // corner at cur
+    d += ` Q ${getPosition(cur.x, size) + half} ${getPosition(cur.y, size) + half}, ${getFromPosition(cur, nextItem, size).join(' ')}`;
+    d += ` L ${getToPosition(cur, nextItem, size).join(' ')}`;
+    cur = nextItem;
+    nx = it.next();
+  }
+
+  const path = elNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', d);
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', lineColor);
+  path.setAttribute('stroke-width', Math.max(3, size / 12));
+  path.setAttribute('stroke-linecap', 'round');
+  path.setAttribute('stroke-linejoin', 'round');
+  layerLinesEl.appendChild(path);
+  // 按真实路径长度设置描边动画，避免硬编码导致的动画不匹配
+  const pathLen = path.getTotalLength();
+  path.setAttribute('stroke-dasharray', String(pathLen));
+  path.setAttribute('stroke-dashoffset', String(pathLen));
+  const anim = elNS('http://www.w3.org/2000/svg', 'animate');
+  anim.setAttribute('attributeName', 'stroke-dashoffset');
+  anim.setAttribute('from', String(pathLen));
+  anim.setAttribute('to', '0');
+  anim.setAttribute('dur', '0.25s');
+  anim.setAttribute('fill', 'freeze');
+  path.appendChild(anim);
+
+  // light point along path
+  const mpath = elNS('http://www.w3.org/2000/svg', 'path');
+  mpath.setAttribute('id', '_connPath');
+  mpath.setAttribute('d', d);
+  mpath.setAttribute('fill', 'none');
+  mpath.setAttribute('stroke', 'none');
+  layerLinesEl.appendChild(mpath);
+
+  const circle = elNS('http://www.w3.org/2000/svg', 'circle');
+  circle.setAttribute('r', '6');
+  circle.setAttribute('fill', lineColor);
+  circle.setAttribute('stroke', '#fff');
+  circle.setAttribute('stroke-width', '2');
+  const motion = elNS('http://www.w3.org/2000/svg', 'animateMotion');
+  motion.setAttribute('dur', '0.7s');
+  motion.setAttribute('fill', 'freeze');
+  const mpRef = elNS('http://www.w3.org/2000/svg', 'mpath');
+  mpRef.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '#_connPath');
+  motion.appendChild(mpRef);
+  circle.appendChild(motion);
+  layerLinesEl.appendChild(circle);
+}
+
+function clearConnection() {
+  while (layerLinesEl.firstChild) layerLinesEl.removeChild(layerLinesEl.firstChild);
+}
+
+/* ============================================================
+ * Game flow
+ * ============================================================ */
+async function handleStart() {
+  // 防重入：快速连点“开始游戏”/切换难度时，只让最后一次启动生效
+  const token = ++startToken;
+  const li = getCurrentLevelInfo();
+  app.state.levelInfo = li;
+  app.state.areaSize = computeAreaSize();
+
+  showLoading('生成棋盘中...');
+  await sleep(20);
+  if (token !== startToken) return;
+
+  const boxes = genBoxes(li);
+  rebuildGrid(boxes);
+  const uniqueSeqs = Array.from(new Set(boxes.map(b => b.seq))).sort((a, b) => a - b);
+  const maps = {};
+  const emojiList = pickEmojis(uniqueSeqs.length);
+  uniqueSeqs.forEach((seq, idx) => { maps[seq] = emojiList[idx]; });
+  app.state.emojiMap = maps;
+  app.state.boxes = boxes;
+  app.state.rearrangement = li.rearrangement;
+  app.state.tips = li.tips;
+  hideLoading();
+
+  app.state.gameStatus = GameStatus.playing;
+  render();
+}
+let startToken = 0;
+
+// 重排所有剩余牌的 seq，循环直到至少存在一对可消
+function rearrangeSeqs() {
+  const items = app.state.boxes.filter(b => b.seq !== 0);
+  const li = app.state.levelInfo;
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const seqs = shuffle(items.map(b => b.seq));
+    items.forEach((it, i) => { it.seq = seqs[i]; it.status = 'default'; });
+    if (findAnyPair(app.state.boxes, li)) return true;
+  }
+  return false;
+}
+
+function handleRearrange() {
+  if (app.state.rearrangement <= 0 || app.state.gameStatus !== GameStatus.playing) return;
+  SoundFX.play('shuffle');
+  const ok = rearrangeSeqs();
+  app.state.rearrangement--;
+  updateAllBoxes();
+  updatePropsDisplay();
+  if (!ok) showToast('未能找到可消除的排列，本局可能已无解');
+}
+
+// 死局兜底：免费自动重排，不消耗道具次数
+function autoRearrange() {
+  SoundFX.play('shuffle');
+  const ok = rearrangeSeqs();
+  updateAllBoxes();
+  showToast(ok ? '当前无可消除的对子，已自动免费重排' : '重排后仍无可消对，本局可能已无解');
+}
+
+async function handleTips() {
+  if (app.state.tips <= 0 || app.state.gameStatus !== GameStatus.playing) return;
+  app.state.gameStatus = GameStatus.inTheAnimation;
+  updatePropsDisplay();
+
+  const checkedItems = findAnyPair(app.state.boxes, app.state.levelInfo);
+  if (checkedItems) {
+    SoundFX.play('tip');
+    checkedItems.forEach(it => { it.status = 'checked'; updateBoxStyle(it); });
+    await sleep(900);
+    checkedItems.forEach(it => { it.status = 'default'; updateBoxStyle(it); });
+    app.state.tips--;
+  } else {
+    autoRearrange();
+  }
+  app.state.gameStatus = GameStatus.playing;
+  updatePropsDisplay();
+}
+
+async function handleCheck(box) {
+  if (app.state.gameStatus !== GameStatus.playing) return;
+  if (app.state.pendingCheck) return;
+
+  if (box.seq === 0) {
+    app.state.boxes.forEach(c => { if (c.status !== 'default') { c.status = 'default'; updateBoxStyle(c); } });
+    return;
+  }
+
+  const checked = app.state.boxes.filter(b => b.status === 'checked');
+  if (checked.find(c => c.x === box.x && c.y === box.y)) {
+    box.status = 'default';
+    updateBoxStyle(box);
+    return;
+  }
+  box.status = 'checked';
+  updateBoxStyle(box);
+  SoundFX.play('select');
+
+  const nowChecked = app.state.boxes.filter(b => b.status !== 'default');
+  if (nowChecked.length < 2) return;
+
+  app.state.pendingCheck = true;
+  app.state.gameStatus = GameStatus.inTheAnimation;
+  updatePropsDisplay();
+
+  const [canRemove, crossItems] = canIRemoveThem(nowChecked.slice(0, 2), app.state.levelInfo);
+  if (canRemove) {
+    SoundFX.play('match');
+    await linkAnimation(crossItems);
+  } else {
+    SoundFX.play('error');
+    nowChecked.forEach(it => { it.status = 'error'; updateBoxStyle(it); });
+    await sleep(220);
+  }
+
+  nowChecked.forEach(it => {
+    if (canRemove) it.seq = 0;
+    it.status = 'default';
+    updateBoxStyle(it);
+  });
+
+  app.state.gameStatus = GameStatus.playing;
+  app.state.pendingCheck = false;
+  updatePropsDisplay();
+
+  if (canRemove && isComplete(app.state.boxes)) {
+    app.state.gameStatus = GameStatus.complete;
+    SoundFX.play('win');
+    showFinishedModal();
+  } else if (canRemove && !findAnyPair(app.state.boxes, app.state.levelInfo)) {
+    autoRearrange();
+  }
+}
+
+async function linkAnimation(items) {
+  drawConnection(items);
+  await sleep(220);
+  clearConnection();
+}
+
+/* ============================================================
+ * Modals
+ * ============================================================ */
+function showSettingModal(fromHome) {
+  const mask = el('div', 'modal-mask');
+  const modal = el('div', 'modal modal-setting');
+  const header = el('div', 'modal-header');
+  header.appendChild(el('h2', 'title', '难度设置'));
+  const closeBtn = el('button', 'btn-close', '✕');
+  header.appendChild(closeBtn);
+  modal.appendChild(header);
+  const wrapper = el('div', 'wrapper');
+  const ul = el('ul', 'list');
+  const levels = buildGameLevels();
+  levels.forEach(it => {
+    const li = el('li', 'item' + (it.level === app.state.currentLevel ? ' current' : ''));
+    li.innerHTML = `
+      <div class="row"><div class="label">难度</div><div class="value">${it.text}</div></div>
+      <div class="row"><div class="label">行数</div><div class="value">${it.row}</div></div>
+      <div class="row"><div class="label">列数</div><div class="value">${it.column}</div></div>
+      <div class="row"><div class="label">元素</div><div class="value">${it.totalOfItems} 种</div></div>
+      <div class="row"><div class="label">边界</div><div class="value">${it.useBoundary ? '有' : '无'}</div></div>
+    `;
+    li.addEventListener('click', async () => {
+      mask.remove();
+      if (fromHome) {
+        // 直接退出mask，home点击开始时按新难度
+        app.state.currentLevel = it.level;
+        saveLevel(it.level);
+        return;
+      }
+      // 切换难度并重启
+      app.state.currentLevel = it.level;
+      saveLevel(it.level);
+      await handleStart();
+    });
+    ul.appendChild(li);
+  });
+  wrapper.appendChild(ul);
+  modal.appendChild(wrapper);
+  mask.appendChild(modal);
+  mask.addEventListener('click', e => { if (e.target === mask) mask.remove(); });
+  closeBtn.addEventListener('click', () => mask.remove());
+  document.body.appendChild(mask);
+}
+
+function showFinishedModal() {
+  const mask = el('div', 'modal-mask');
+  const modal = el('div', 'modal modal-finished');
+  const wrapper = el('div', 'wrapper');
+  wrapper.appendChild(el('div', 'star', '🎉'));
+  wrapper.appendChild(el('div', null, '恭喜通关！'));
+  wrapper.appendChild(el('div', 'level-text', '当前难度：' + app.state.levelInfo.text));
+  const ops = el('div', 'operations');
+  const refresh = el('div', 'btn btn-refresh', '再来一局');
+  refresh.addEventListener('click', async () => {
+    mask.remove();
+    await handleStart();
+  });
+  const setLevel = el('div', 'btn btn-set-level', '更换难度');
+  setLevel.addEventListener('click', () => {
+    mask.remove();
+    showSettingModal();
+  });
+  ops.appendChild(refresh);
+  ops.appendChild(setLevel);
+  wrapper.appendChild(ops);
+  modal.appendChild(wrapper);
+  mask.appendChild(modal);
+  document.body.appendChild(mask);
+}
+
+function showLoading(text) {
+  let l = document.querySelector('.loading');
+  if (!l) {
+    l = el('div', 'loading', text || '加载中...');
+    document.body.appendChild(l);
+  } else {
+    l.textContent = text || '加载中...';
+    l.classList.remove('hidden');
+  }
+}
+function hideLoading() {
+  const l = document.querySelector('.loading');
+  if (l) l.classList.add('hidden');
+}
+
+function showToast(text) {
+  let t = document.querySelector('.toast');
+  if (!t) {
+    t = el('div', 'toast');
+    document.body.appendChild(t);
+  }
+  t.textContent = text;
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 1800);
+}
+
+/* ============================================================
+ * Sound effects（改为原生 Web Audio，无需外部音频文件依赖）
+ * ============================================================ */
+const SoundFX = (() => {
+  let ctx = null;
+  function audioCtx() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    return ctx;
+  }
+  function tone(freq, duration, type, volume, delay = 0) {
+    const c = audioCtx();
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(volume, c.currentTime + delay);
+    gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + delay + duration);
+    osc.connect(gain);
+    gain.connect(c.destination);
+    osc.start(c.currentTime + delay);
+    osc.stop(c.currentTime + delay + duration);
+  }
+  const sounds = {
+    select() { tone(880, 0.05, 'sine', 0.03); },
+    match() { tone(784, 0.08, 'triangle', 0.05); tone(1175, 0.12, 'triangle', 0.04, 0.05); },
+    error() { tone(220, 0.12, 'sawtooth', 0.05); tone(180, 0.15, 'sawtooth', 0.04, 0.05); },
+    tip() { tone(660, 0.08, 'sine', 0.04); tone(990, 0.08, 'sine', 0.04, 0.08); },
+    shuffle() { tone(300, 0.04, 'square', 0.03); tone(450, 0.04, 'square', 0.03, 0.04); tone(600, 0.04, 'square', 0.03, 0.08); },
+    win() {
+      [523,659,784,1046].forEach((f, i) => tone(f, 0.25, 'triangle', 0.05, i * 0.1));
+    }
+  };
+  return {
+    play(name) {
+      try {
+        if (sounds[name]) sounds[name]();
+      } catch (e) {}
+    }
+  };
+})();
+
+/* ============================================================
+ * Resize（保留 DOM 节点，仅更新坐标与尺寸）
+ * ============================================================ */
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  if (resizeTimer) clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (app.state.gameStatus === GameStatus.playing || app.state.gameStatus === GameStatus.inTheAnimation) {
+      const li = app.state.levelInfo;
+      if (!li) return;
+      // 只按当前行列重算格子尺寸：不能重新取 levelInfo，
+      // 否则横竖屏切换会改变 row/column，与已生成棋子的坐标不一致导致越界
+      app.state.levelInfo = { ...li, size: getSize(li.row, li.column, window.innerWidth, window.innerHeight - 80) };
+      app.state.areaSize = computeAreaSize();
+      layoutBoard();
+    }
+  }, 200);
+});
+
+/* ============================================================
+ * Init
+ * ============================================================ */
+app.els.root = document.getElementById('app');
+applyTheme(getStoredTheme());
+document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+loadSavedLevel();
+render();
+</script>
+</body>
+</html>

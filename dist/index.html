@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎮 游戏厅</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>" />
+  <script type="module" crossorigin src="./assets/index-CRCzDwaV.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-va9-UQbx.css">
+</head>
+<body>
+  <div id="hall">
+    <!-- 大厅首页：游戏卡片墙 -->
+    <div id="viewWall">
+      <div class="hall-hero">
+        <h1>🎮 游戏厅</h1>
+        <p>选一款，开始玩 —— 存档自动保存，刷新不丢</p>
+      </div>
+      <div class="games-wall" id="gamesWall"></div>
+      <div class="hall-foot">游戏在独立沙箱中运行，读不到页面其他数据 · arcade 实验分支</div>
+    </div>
+
+    <!-- 游戏播放页 -->
+    <div id="viewPlayer" class="view-hidden">
+      <div class="player-bar">
+        <button class="p-back" id="btnBack">← 返回大厅</button>
+        <span class="p-title" id="playerTitle"></span>
+        <button class="p-btn" id="btnReload">⟲ 重载</button>
+        <button class="p-btn" id="btnFull">⛶ 全屏</button>
+        <button class="p-btn danger" id="btnClearSave">清空存档</button>
+      </div>
+      <div class="player-stage" id="playerStage">
+        <iframe id="gameFrame" title="游戏" sandbox="allow-scripts allow-pointer-lock allow-modals" allowfullscreen></iframe>
+      </div>
+      <div class="player-tip" id="playerTip"></div>
+    </div>
+  </div>
+</body>
+</html>
