@@ -9,11 +9,11 @@
 
 **多游戏合集 —— 一个大厅，4 款游戏随便选**
 
-### [▶️ 进入游戏厅](https://civinar-riley.github.io/blackjack-21/arcade/)
+### [▶️ 进入游戏厅](https://civinar-riley.github.io/blackjack-21/)
 
 </div>
 
-> 📌 这是 `arcade` 分支。21 点单游戏在 [`main` 分支](https://github.com/Civinar-Riley/blackjack-21)，在线地址：https://civinar-riley.github.io/blackjack-21/
+> 📌 21 点单游戏旧版（Vite 多文件）在 [`main-backup-21point` 分支](https://github.com/Civinar-Riley/blackjack-21/tree/main-backup-21point)，游戏厅里的 21 点是单文件版。
 
 ## 🕹️ 收录游戏
 
@@ -35,14 +35,14 @@
 
 1. 把**单文件 HTML**（样式/脚本全内联）丢进 `public/games/`
 2. 在 `src/hall/hall.js` 的 `GAMES` 数组加一行：文件名、图标、名字、一句话介绍
-3. 推送到 `arcade` 分支，自动部署到 `/arcade/`
+3. 推送到 `main` 分支，自动部署上线
 
 ## 🛠️ 技术
 
 - Vite 6 + 原生 HTML/CSS/JS，零运行时依赖
 - 存档桥 `src/hall/gamesave.js`：localStorage 垫片 + postMessage 快照（从 game-hall 项目移植，久经考验）
 - 沙箱：`sandbox="allow-scripts allow-pointer-lock allow-modals"`（无 `allow-same-origin`）
-- 部署：GitHub Actions 双分支构建，`main` → 根目录，`arcade` → `/arcade/`
+- 部署：GitHub Actions，推送 `main` 自动构建部署到 GitHub Pages 根目录
 
 ## 💻 本地运行
 
