@@ -60,14 +60,16 @@
         .game-container {
             flex: 1;
             min-width: 0;
-            max-width: 760px;
-            background: radial-gradient(ellipse at center, #1e4d2b 0%, #0f2a1a 100%);
+            max-width: 760px;            background: radial-gradient(ellipse at center, #1e4d2b 0%, #0f2a1a 100%);
             border-radius: 40px;
             padding: 24px 22px 28px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.85), inset 0 1px 4px rgba(255,215,0,0.2);
             border: 2px solid #b8860b;
             position: relative;
             transition: all 0.2s;
+            /* 牌桌内部纵向排布：中间牌区吸收多余高度 */
+            display: flex;
+            flex-direction: column;
         }
         .game-container::before {
             content: '';
@@ -342,8 +344,8 @@
         .btn-insurance-no:hover { transform: translateY(-2px); }
 
         /* ========== 牌桌区域 ========== */
-        .table { position: relative; z-index: 1; margin-bottom: 6px; }
-        .dealer-area, .player-area { margin-bottom: 14px; }
+        .table { position: relative; z-index: 1; margin-bottom: 6px; flex: 1; display: flex; flex-direction: column; }
+        .dealer-area, .player-area { flex: 1; margin-bottom: 14px; }
         .player-area.multiple-hands { margin-bottom: 6px; }
 
         .area-label {
