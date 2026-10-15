@@ -3,7 +3,7 @@
 import { CONFIG, getCardColor } from './config.js';
 import { SoundFX } from './sound.js';
 import { Deck, Hand } from './cards.js';
-import { ACHIEVEMENTS } from './achievements.js';
+import { ACHIEVEMENTS, StatsManager } from './achievements.js';
 
 export class Game {
     constructor() {

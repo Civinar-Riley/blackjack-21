@@ -46,7 +46,7 @@ export const ACHIEVEMENTS = [
     { id: 'double_bust',   name: '加倍冒险家', desc: '加倍后爆牌5次',              icon: '💥', check: s => s.doubleBustCount >= 5 },
 ];
 
-class StatsManager {
+export class StatsManager {
     constructor() {
         this.data = this._load();
         this._checkNewAchievements = [];
