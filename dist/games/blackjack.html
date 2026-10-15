@@ -23,7 +23,9 @@
             gap: 16px;
             width: 100%;
             max-width: 1200px;
-            align-items: flex-start;
+            align-items: stretch;
+            /* 视口有富余高度时（如全屏）三栏撑满，视口矮时保持内容高度不变 */
+            min-height: calc(100vh - 24px);
         }
         .side-panel {
             width: 220px;
@@ -33,7 +35,7 @@
             border: 1px solid rgba(255, 215, 0, 0.15);
             border-radius: 20px;
             padding: 16px 14px;
-            max-height: 680px;
+            max-height: calc(100vh - 24px);
             overflow-y: auto;
             scrollbar-width: thin;
             scrollbar-color: rgba(255,215,0,0.25) transparent;
