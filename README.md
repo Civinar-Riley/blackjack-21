@@ -14,6 +14,10 @@
 
 <img src="docs/screenshot.png" alt="游戏截图" width="720">
 
+### [🎮 游戏厅（4 款游戏合集）](https://civinar-riley.github.io/blackjack-21/arcade/)
+
+> 本仓库还有个 `arcade` 分支做的**游戏厅**：21 点 / 扫雷 / 赛马场 / 连连看，一个大厅随便选。每个游戏独立沙箱运行，存档自动保存。
+
 </div>
 
 ## ✨ 玩法功能
