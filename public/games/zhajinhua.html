@@ -66,9 +66,31 @@ body{background:#0b3d2e;background:radial-gradient(ellipse at 50% 30%,#146b4f 0%
 #panel .btn{margin-top:12px;width:100%;flex:none}
 #helplist{text-align:left;font-size:13px;line-height:1.9;color:#e8f5e9}
 #helplist b{color:#ffd76a}
+/* 宽屏侧栏：牌型介绍 */
+#handguide{display:none}
+@media (min-width:920px){
+  #handguide{display:block;position:fixed;left:calc(50% - 240px - 225px);top:50%;transform:translateY(-50%);width:205px;background:rgba(0,0,0,.38);border:1px solid #d4a437;border-radius:12px;padding:12px 10px;font-size:12px}
+  #handguide h3{font-size:14px;color:#ffd76a;margin-bottom:8px;text-align:center}
+  #handguide .hr{display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px dashed rgba(255,255,255,.12)}
+  #handguide .hr:last-of-type{border-bottom:none}
+  #handguide .hn{color:#ffe9a8;font-weight:700;white-space:nowrap}
+  #handguide .he{font-size:12px;letter-spacing:1px;white-space:nowrap}
+  #handguide .he .r{color:#ff9d9d}#handguide .he .b{color:#ddd}
+  #handguide .note{font-size:11px;color:#8ab69a;margin-top:8px;line-height:1.7}
+}
 </style>
 </head>
 <body>
+<aside id="handguide">
+  <h3>🃏 牌型（大 → 小）</h3>
+  <div class="hr"><span class="hn">豹子</span><span class="he"><span class="b">K♠</span> <span class="r">K♥</span> <span class="b">K♣</span></span></div>
+  <div class="hr"><span class="hn">同花顺</span><span class="he"><span class="b">Q♠</span> <span class="b">J♠</span> <span class="b">10♠</span></span></div>
+  <div class="hr"><span class="hn">同花</span><span class="he"><span class="b">A♠</span> <span class="b">9♠</span> <span class="b">5♠</span></span></div>
+  <div class="hr"><span class="hn">顺子</span><span class="he"><span class="r">Q♥</span> <span class="b">J♣</span> <span class="r">10♦</span></span></div>
+  <div class="hr"><span class="hn">对子</span><span class="he"><span class="b">9♠</span> <span class="r">9♥</span> <span class="b">5♣</span></span></div>
+  <div class="hr"><span class="hn">单张</span><span class="he"><span class="b">A♠</span> <span class="r">J♥</span> <span class="b">8♣</span></span></div>
+  <div class="note">A23 为最小顺子<br>闷牌下注单倍，看牌后×2<br>比牌花双倍注，输家出局</div>
+</aside>
 <div id="app">
   <div id="topbar">
     <div id="pot">底池 0</div>
