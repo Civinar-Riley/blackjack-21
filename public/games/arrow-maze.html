@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<title>箭头迷宫</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(1200px 800px at 50% -10%, #1b2740 0%, #0c1220 60%, #080d18 100%);
+    color:#eef2fa;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;user-select:none;
+  }
+  #app{width:100%;max-width:460px;padding:12px 12px 20px;display:flex;flex-direction:column;gap:10px;}
+  header{display:flex;align-items:center;justify-content:space-between;}
+  .title{font-size:20px;font-weight:800;letter-spacing:2px;}
+  .title small{display:block;font-size:11px;color:#8b96ad;font-weight:400;letter-spacing:0;margin-top:2px;}
+  .meta{display:flex;align-items:center;gap:10px;}
+  #remain{font-size:13px;color:#aeb8cc;white-space:nowrap;}
+  #remain b{color:#ffd166;font-size:16px;}
+  #newgame{background:linear-gradient(180deg,#e8c85a,#c39a2b);border:none;color:#231a05;
+    font-weight:700;font-size:13px;padding:8px 14px;border-radius:10px;cursor:pointer;}
+  #newgame:active{transform:scale(.96);}
+  #board{position:relative;display:flex;justify-content:center;}
+  svg{width:100%;height:auto;display:block;background:rgba(255,255,255,.025);
+    border:1px solid rgba(255,255,255,.08);border-radius:14px;touch-action:manipulation;}
+  .ap{fill:none;stroke-linecap:round;stroke-linejoin:round;cursor:pointer;transition:opacity .25s;}
+  .ap-hit{fill:none;stroke:rgba(0,0,0,0);stroke-width:38;cursor:pointer;pointer-events:stroke;}
+  .blocked{opacity:.22;cursor:not-allowed;}
+  .blocked + .ap-hit{cursor:not-allowed;}
+  .clearing{opacity:0 !important;transition:opacity .3s;}
+  .glow{filter:drop-shadow(0 0 7px #ffd166);opacity:1 !important;}
+  .shake{animation:shk .3s;}
+  @keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  .shake{transform-box:fill-box;transform-origin:center;}
+  #toast{position:fixed;left:50%;bottom:18%;transform:translateX(-50%) translateY(10px);
+    background:rgba(10,14,24,.92);border:1px solid rgba(212,175,55,.5);color:#ffe9a8;
+    font-size:14px;padding:10px 18px;border-radius:12px;opacity:0;pointer-events:none;
+    transition:opacity .25s, transform .25s;z-index:50;white-space:nowrap;max-width:92vw;}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  #win{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(5,8,15,.72);z-index:40;backdrop-filter:blur(3px);}
+  #win.hidden{display:none;}
+  .win-card{background:linear-gradient(180deg,#182238,#0e1526);border:1px solid rgba(212,175,55,.55);
+    border-radius:18px;padding:34px 44px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+  .win-card .big{font-size:44px;margin-bottom:8px;}
+  .win-card h2{margin:0 0 6px;font-size:22px;letter-spacing:3px;color:#ffd166;}
+  .win-card p{margin:0 0 18px;color:#9aa5bc;font-size:13px;}
+  .win-card button{background:linear-gradient(180deg,#e8c85a,#c39a2b);border:none;color:#231a05;
+    font-weight:800;font-size:15px;padding:11px 30px;border-radius:12px;cursor:pointer;letter-spacing:2px;}
+  .hint{font-size:12px;color:#69738a;text-align:center;line-height:1.7;}
+  .hint b{color:#c8d0e2;font-weight:600;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="title">➡️ 箭头迷宫<small>点掉所有箭头 · 被压住的先清掉上面的</small></div>
+    <div class="meta"><span id="remain">剩余 <b>--</b> 条</span><button id="newgame">换一局</button></div>
+  </header>
+  <div id="board"><svg id="svg" viewBox="0 0 400 560" aria-label="箭头迷宫棋盘"></svg></div>
+  <div class="hint">🌈 <b>彩虹箭头</b>：点掉后额外随机带走 5 条<br/>💪 <b>粗箭头</b>：3 倍粗，压住它的 3 条全清才能点</div>
+</div>
+<div id="toast"></div>
+<div id="win" class="hidden">
+  <div class="win-card">
+    <div class="big">🏆</div>
+    <h2>全部清除</h2>
+    <p>迷宫清空，干得漂亮！</p>
+    <button id="again">再来一局</button>
+  </div>
+</div>
+<script>
+'use strict';
+/* =====================================================================
+ * 箭头迷宫消除 —— 单文件游戏（大厅 public/games/ 规范）
+ * 纯逻辑部分（mulberry32 / genLevel / isClearable / solveStep）不依赖 DOM，
+ * 可被 node 直接 eval 做生成器冒烟测试；UI 部分只在有 document 时启动。
+ * 存档：localStorage 鍵 arrowmaze_v1 = {seed, cleared:[pathId]}（壳垫片自动落盘）
+ * ===================================================================== */
+
+/* ---------- seeded RNG ---------- */
+function mulberry32(a){
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const COLS = 9, ROWS = 13;          // 竖版棋盘
+const NORMAL_COUNT = 12;            // 普通箭头条数（长短不一）
+const SAVE_KEY = 'arrowmaze_v1';
+
+const DIRS4 = [[1,0],[0,1],[-1,0],[0,-1]];
+
+function inB(x, y){ return x >= 0 && y >= 0 && x < COLS && y < ROWS; }
+
+/* 一次随机游走：返回 cells（[[x,y]...]）或 null。
+ * avoidOccupied=true 时只走空格子（给粗箭头用，保证它只在预设点被交叉）。 */
+function randomWalk(rng, occ, minLen, maxLen, avoidOccupied){
+  for (let t = 0; t < 80; t++){
+    const sx = (rng() * COLS) | 0, sy = (rng() * ROWS) | 0;
+    const o0 = occ.get(sx + ',' + sy);
+    if (o0 && o0.length > 0) continue;
+    const cells = [[sx, sy]];
+    const seen = new Set([sx + ',' + sy]);
+    let di = (rng() * 4) | 0;
+    const targetLen = minLen + ((rng() * (maxLen - minLen + 1)) | 0);
+    let guard = 0;
+    while (cells.length < targetLen && guard++ < 300){
+      const rev = (di + 2) % 4;
+      const cur = cells[cells.length - 1];
+      const cands = [];
+      for (let k = 0; k < 4; k++){
+        if (k === rev) continue;
+        const nx = cur[0] + DIRS4[k][0], ny = cur[1] + DIRS4[k][1];
+        if (!inB(nx, ny) || seen.has(nx + ',' + ny)) continue;
+        const oo = occ.get(nx + ',' + ny);
+        if (oo && oo.length >= 2) continue;
+        if (avoidOccupied && oo && oo.length > 0) continue;
+        if (oo && oo.length === 1){
+          // 已有箭头经过：只允许垂直交叉，不允许平行重叠
+          const e = oo[0];
+          const parallel = (DIRS4[k][0] !== 0 && e.dx !== 0) || (DIRS4[k][1] !== 0 && e.dy !== 0);
+          if (parallel) continue;
+        }
+        cands.push([k, k === di ? 5 : 2.2]); // 惯性：更爱直走，弯弯绕绕但不乱拐
+      }
+      if (!cands.length) break;
+      let tot = 0;
+      for (const c of cands) tot += c[1];
+      let r = rng() * tot, pick = cands[0][0];
+      for (const c of cands){ r -= c[1]; if (r <= 0){ pick = c[0]; break; } }
+      di = pick;
+      const nx = cur[0] + DIRS4[di][0], ny = cur[1] + DIRS4[di][1];
+      cells.push([nx, ny]);
+      seen.add(nx + ',' + ny);
+    }
+    if (cells.length >= minLen) return cells;
+  }
+  return null;
+}
+
+/* 路径经过某格的方向（单位向量），用于画箭头与判断交叉角度 */
+function dirThrough(cells, i){
+  let dx, dy;
+  if (i < cells.length - 1){ dx = cells[i+1][0] - cells[i][0]; dy = cells[i+1][1] - cells[i][1]; }
+  else { dx = cells[i][0] - cells[i-1][0]; dy = cells[i][1] - cells[i-1][1]; }
+  return [Math.sign(dx), Math.sign(dy)];
+}
+
+/* 生成一局：{ paths:[{id,cells,wide,mini,rainbow,priority}], blockers:Map(id->Set) }
+ * 失败返回 null（外层换种子重试）。阻挡图按 priority 定向，天然无环、必可解。 */
+function tryGen(rng){
+  const occ = new Map();   // "x,y" -> [{p, dx, dy}]
+  const paths = [];
+  const occAt = (x, y) => occ.get(x + ',' + y) || [];
+
+  function commit(cells){
+    const id = paths.length;
+    const p = { id, cells, wide:false, mini:false, rainbow:false, priority:0 };
+    for (let i = 0; i < cells.length; i++){
+      const [x, y] = cells[i];
+      const [dx, dy] = dirThrough(cells, i);
+      const k = x + ',' + y;
+      const arr = occ.get(k) || [];
+      arr.push({ p:id, dx, dy });
+      occ.set(k, arr);
+    }
+    paths.push(p);
+    return p;
+  }
+
+  // 1) 普通箭头：长短不一 3~14 格
+  let att = 0;
+  while (paths.length < NORMAL_COUNT && att++ < 500){
+    const cells = randomWalk(rng, occ, 3, 14, false);
+    if (cells) commit(cells);
+  }
+  if (paths.length < NORMAL_COUNT) return null;
+
+  // 2) 粗箭头：只走空格子，长度 9~16，之后只在预设点被交叉
+  let wide = null;
+  att = 0;
+  while (!wide && att++ < 80){
+    const cells = randomWalk(rng, occ, 9, 16, true);
+    if (cells){ wide = commit(cells); wide.wide = true; }
+  }
+  if (!wide) return null;
+
+  // 3) 优先级：打乱；粗箭头最低（谁压它都算挡住它）
+  const ids = paths.map(p => p.id).filter(id => id !== wide.id);
+  for (let i = ids.length - 1; i > 0; i--){
+    const j = (rng() * (i + 1)) | 0;
+    const tmp = ids[i]; ids[i] = ids[j]; ids[j] = tmp;
+  }
+  ids.forEach((id, idx) => { paths[id].priority = idx; });
+  wide.priority = -1;
+
+  // 4) 3 条短箭头，垂直压过粗箭头（ spread 在 20%/50%/80% 处）
+  const wc = wide.cells;
+  const minis = [];
+  const fracs = [0.2, 0.5, 0.8];
+  const usedIdx = new Set();
+  for (const f of fracs){
+    let done = false;
+    for (let off = 0; off <= 3 && !done; off++){
+      for (const sgn of [0, 1, -1]){
+        const ii = Math.max(0, Math.min(wc.length - 1, Math.round(wc.length * f) + sgn * off));
+        if (usedIdx.has(ii)) continue;
+        const [x, y] = wc[ii];
+        const [dx, dy] = dirThrough(wc, ii);
+        const px = -dy, py = dx; // 垂向
+        const c1 = [x - px, y - py], c2 = [x + px, y + py];
+        if (!inB(c1[0], c1[1]) || !inB(c2[0], c2[1])) continue;
+        if (occAt(c1[0], c1[1]).length >= 2 || occAt(c2[0], c2[1]).length >= 2) continue;
+        if (occAt(c1[0], c1[1]).some(e => e.p === wide.id)) continue;
+        if (occAt(c2[0], c2[1]).some(e => e.p === wide.id)) continue;
+        minis.push(commit([c1, [x, y], c2]));
+        usedIdx.add(ii);
+        done = true;
+        break;
+      }
+    }
+    if (!done) return null;
+  }
+  let pr = ids.length;
+  for (const m of minis){ m.mini = true; m.priority = pr++; } // 短箭头压住粗箭头
+
+  // 5) 彩虹箭头：从普通箭头里抽一条
+  const pool = paths.filter(p => !p.wide && !p.mini);
+  if (!pool.length) return null;
+  pool[(rng() * pool.length) | 0].rainbow = true;
+
+  // 6) 阻挡关系：同格两条路径，priority 高的压住低的（两两比较，防多占）
+  const blockers = new Map();
+  const addBlock = (under, over) => {
+    if (under === over) return;
+    if (!blockers.has(under)) blockers.set(under, new Set());
+    blockers.get(under).add(over);
+  };
+  for (const arr of occ.values()){
+    for (let i = 0; i < arr.length; i++)
+      for (let j = i + 1; j < arr.length; j++){
+        const a = arr[i], b = arr[j];
+        if (a.p === b.p) continue;
+        if (paths[a.p].priority > paths[b.p].priority) addBlock(b.p, a.p);
+        else addBlock(a.p, b.p);
+      }
+  }
+  let maxOcc = 0;
+  for (const arr of occ.values()) maxOcc = Math.max(maxOcc, arr.length);
+  return { paths, blockers, maxOcc };
+}
+
+function genLevel(seed){
+  for (let a = 0; a < 60; a++){
+    const lvl = tryGen(mulberry32(((seed + a * 0x9e3779b9) >>> 0)));
+    if (lvl){ lvl.seed = (seed + a * 0x9e3779b9) >>> 0; return lvl; }
+  }
+  return tryGen(mulberry32(seed >>> 0)); // 理论上到不了
+}
+
+/* 该箭头是否可点：所有压住它的都被清掉了 */
+function isClearable(level, id, cleared){
+  const bs = level.blockers.get(id);
+  if (!bs) return true;
+  for (const b of bs) if (!cleared.has(b)) return false;
+  return true;
+}
+
+/* ---------------- UI（只在浏览器里跑） ---------------- */
+if (typeof document !== 'undefined' && typeof window !== 'undefined'){
+(function(){
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const S = 40, PAD = 20; // 格宽 / 边距
+  const svg = document.getElementById('svg');
+  const remainEl = document.getElementById('remain');
+  const toastEl = document.getElementById('toast');
+  const winEl = document.getElementById('win');
+  const X = i => PAD + i * S + S / 2, Y = j => PAD + j * S + S / 2;
+
+  let level = null;
+  let cleared = new Set();
+  let seed = 0;
+
+  /* 背景：淡淡的圆点网格 + 彩虹渐变定义 */
+  function paintDefs(){
+    svg.innerHTML = '';
+    const defs = document.createElementNS(SVGNS, 'defs');
+    const pat = document.createElementNS(SVGNS, 'pattern');
+    pat.setAttribute('id', 'dots'); pat.setAttribute('width', S); pat.setAttribute('height', S);
+    pat.setAttribute('patternUnits', 'userSpaceOnUse');
+    const c = document.createElementNS(SVGNS, 'circle');
+    c.setAttribute('cx', PAD + S/2); c.setAttribute('cy', PAD + S/2); c.setAttribute('r', 1.6);
+    c.setAttribute('fill', 'rgba(255,255,255,.09)');
+    pat.appendChild(c); defs.appendChild(pat);
+    const g = document.createElementNS(SVGNS, 'linearGradient');
+    g.setAttribute('id', 'rbow'); g.setAttribute('x1', '0'); g.setAttribute('y1', '0');
+    g.setAttribute('x2', '1'); g.setAttribute('y2', '1');
+    [['0','#ff5b5b'],['0.2','#ff9f43'],['0.4','#ffd93b'],['0.6','#4fc94f'],['0.8','#4f9fff'],['1','#b44fff']]
+      .forEach(([o, col]) => {
+        const st = document.createElementNS(SVGNS, 'stop');
+        st.setAttribute('offset', o); st.setAttribute('stop-color', col);
+        g.appendChild(st);
+      });
+    defs.appendChild(g);
+    svg.appendChild(defs);
+    const bg = document.createElementNS(SVGNS, 'rect');
+    bg.setAttribute('x', 0); bg.setAttribute('y', 0);
+    bg.setAttribute('width', 400); bg.setAttribute('height', 560);
+    bg.setAttribute('fill', 'url(#dots)');
+    svg.appendChild(bg);
+  }
+
+  function pathD(cells){
+    return cells.map(([x, y], i) => (i ? 'L' : 'M') + X(x) + ' ' + Y(y)).join(' ');
+  }
+
+  function strokeOf(p){
+    if (p.rainbow) return 'url(#rbow)';
+    if (p.wide) return '#ffcf5c';
+    return '#e6ebf5';
+  }
+  function widthOf(p){ return p.wide ? 30 : 11; }
+
+  function render(){
+    paintDefs();
+    // 先画被压的（priority 低在下），压人的盖在上面
+    const order = level.paths.slice().sort((a, b) => a.priority - b.priority);
+    for (const p of order){
+      if (cleared.has(p.id)) continue;
+      const g = document.createElementNS(SVGNS, 'g');
+      g.setAttribute('data-id', p.id);
+      g.setAttribute('class', 'pgroup');
+
+      const vis = document.createElementNS(SVGNS, 'path');
+      vis.setAttribute('d', pathD(p.cells));
+      vis.setAttribute('class', 'ap' + (isClearable(level, p.id, cleared) ? '' : ' blocked'));
+      vis.setAttribute('stroke', strokeOf(p));
+      vis.setAttribute('stroke-width', widthOf(p));
+      g.appendChild(vis);
+
+      // 沿路径画小箭头
+      const scale = p.wide ? 1.7 : 1;
+      for (let i = 2; i < p.cells.length; i += 3){
+        const [dx, dy] = dirThrough(p.cells, i);
+        const cx = X(p.cells[i][0]), cy = Y(p.cells[i][1]);
+        const ang = Math.atan2(dy, dx) * 180 / Math.PI;
+        const tri = document.createElementNS(SVGNS, 'path');
+        const L = 15 * scale, Wd = 10 * scale;
+        tri.setAttribute('d', `M ${L*0.7} 0 L ${-L*0.5} ${Wd} L ${-L*0.2} 0 L ${-L*0.5} ${-Wd} Z`);
+        tri.setAttribute('fill', p.rainbow ? '#ffffff' : (p.wide ? '#5a430a' : '#0c1220'));
+        tri.setAttribute('opacity', p.rainbow ? '.95' : '.9');
+        tri.setAttribute('transform', `translate(${cx} ${cy}) rotate(${ang})`);
+        tri.setAttribute('pointer-events', 'none');
+        g.appendChild(tri);
+      }
+
+      // 被压住：画小锁 + 压住它的条数
+      const bs = level.blockers.get(p.id);
+      let nBlock = 0;
+      if (bs) for (const b of bs) if (!cleared.has(b)) nBlock++;
+      if (nBlock > 0){
+        const mid = p.cells[(p.cells.length / 2) | 0];
+        const badge = document.createElementNS(SVGNS, 'g');
+        badge.setAttribute('pointer-events', 'none');
+        const rc = document.createElementNS(SVGNS, 'circle');
+        rc.setAttribute('cx', X(mid[0])); rc.setAttribute('cy', Y(mid[1]));
+        rc.setAttribute('r', 13); rc.setAttribute('fill', 'rgba(8,12,22,.88)');
+        rc.setAttribute('stroke', '#d4af37'); rc.setAttribute('stroke-width', 1.5);
+        const tx = document.createElementNS(SVGNS, 'text');
+        tx.setAttribute('x', X(mid[0])); tx.setAttribute('y', Y(mid[1]) + 5);
+        tx.setAttribute('text-anchor', 'middle'); tx.setAttribute('font-size', '13');
+        tx.setAttribute('fill', '#ffd166'); tx.textContent = '🔒' + nBlock;
+        badge.appendChild(rc); badge.appendChild(tx);
+        g.appendChild(badge);
+      }
+
+      // 透明加粗命中层
+      const hit = document.createElementNS(SVGNS, 'path');
+      hit.setAttribute('d', pathD(p.cells));
+      hit.setAttribute('class', 'ap-hit');
+      hit.addEventListener('pointerdown', ev => { ev.preventDefault(); onTap(p.id); });
+      g.appendChild(hit);
+
+      svg.appendChild(g);
+    }
+    updateRemain();
+  }
+
+  function updateRemain(){
+    const n = level.paths.length - cleared.size;
+    remainEl.innerHTML = '剩余 <b>' + n + '</b> 条';
+  }
+
+  let toastTimer = 0;
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1400);
+  }
+
+  function gOf(id){ return svg.querySelector(`g.pgroup[data-id="${id}"]`); }
+
+  function onTap(id){
+    if (cleared.has(id)) return;
+    const p = level.paths[id];
+    if (!isClearable(level, id, cleared)){
+      // 抖一下 + 高亮压住它的箭头
+      const g = gOf(id);
+      if (g){ g.classList.remove('shake'); void g.getBoundingClientRect(); g.classList.add('shake'); }
+      const bs = level.blockers.get(id) || new Set();
+      let n = 0;
+      for (const b of bs){
+        if (cleared.has(b)) continue;
+        n++;
+        const gb = gOf(b);
+        if (gb){ gb.classList.add('glow'); setTimeout(() => gb.classList.remove('glow'), 900); }
+      }
+      toast(n ? `被 ${n} 条箭头压住了，先清掉发光的那${n > 1 ? '些' : '条'}` : '被压住了');
+      return;
+    }
+    clearPath(id, false);
+  }
+
+  function clearPath(id, silent){
+    if (cleared.has(id)) return;
+    cleared.add(id);
+    const p = level.paths[id];
+    const g = gOf(id);
+    if (g){
+      g.classList.add('clearing');
+      setTimeout(() => { if (g.parentNode) g.parentNode.removeChild(g); }, 320);
+    }
+    save();
+    updateRemain();
+    // 被压住的箭头可能解锁了：重画一次刷新状态（轻量：整局 paths 不多）
+    setTimeout(() => { if (!silent) render(); }, 300);
+    if (p.rainbow && !silent){
+      toast('🌈 彩虹爆发！随机带走 5 条');
+      setTimeout(() => rainbowBlast(), 450);
+    }
+    setTimeout(checkWin, silent ? 60 : 700);
+  }
+
+  function rainbowBlast(){
+    const rest = level.paths.filter(q => !cleared.has(q.id));
+    for (let i = rest.length - 1; i > 0; i--){
+      const j = (Math.random() * (i + 1)) | 0;
+      const t = rest[i]; rest[i] = rest[j]; rest[j] = t;
+    }
+    rest.slice(0, 5).forEach((q, k) => setTimeout(() => clearPath(q.id, true), k * 160));
+    setTimeout(() => { render(); checkWin(); }, 5 * 160 + 400);
+  }
+
+  function checkWin(){
+    if (cleared.size >= level.paths.length){
+      try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+      winEl.classList.remove('hidden');
+    }
+  }
+
+  function save(){
+    try{
+      localStorage.setItem(SAVE_KEY, JSON.stringify({ v:1, seed, cleared:[...cleared] }));
+    }catch(e){}
+  }
+
+  function load(){
+    try{
+      const o = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+      if (o && typeof o.seed === 'number' && Array.isArray(o.cleared)) return o;
+    }catch(e){}
+    return null;
+  }
+
+  function newGame(newSeed){
+    seed = (newSeed === undefined ? ((Date.now() ^ (Math.random() * 1e9)) >>> 0) : newSeed >>> 0);
+    level = genLevel(seed);
+    cleared = new Set();
+    winEl.classList.add('hidden');
+    save();
+    render();
+  }
+
+  document.getElementById('newgame').addEventListener('click', () => newGame());
+  document.getElementById('again').addEventListener('click', () => newGame());
+
+  // 启动：有存档读档，无存档开新局
+  const s = load();
+  if (s){
+    seed = s.seed >>> 0;
+    level = genLevel(seed);
+    cleared = new Set(s.cleared.filter(id => Number.isInteger(id) && id >= 0 && id < level.paths.length));
+  } else {
+    seed = ((Date.now() ^ (Math.random() * 1e9)) >>> 0);
+    level = genLevel(seed);
+    cleared = new Set();
+    save();
+  }
+  render();
+  if (cleared.size >= level.paths.length) checkWin();
+})();
+}
+</script>
+</body>
+</html>

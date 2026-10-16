@@ -12,6 +12,7 @@ const GAMES = [
     { file: 'minesweeper.html',  icon: '💣', name: '扫雷',           desc: '经典扫雷：扫开所有安全格，别踩到雷' },
     { file: 'horse-racing.html', icon: '🏇', name: '赛马场',         desc: '赛马竞速：看准马儿下注，体验一把赌马' },
     { file: 'match-pairs.html',  icon: '🀄', name: '连连看',         desc: '连连看消消乐：把相同的牌全部配对消除' },
+    { file: 'arrow-maze.html',   icon: '➡️', name: '箭头迷宫',       desc: '箭头迷宫消除：点掉所有箭头，被压住的先清掉上面的' },
 ];
 
 const $ = (s, root) => (root || document).querySelector(s);
