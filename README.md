@@ -2,7 +2,7 @@
 
 # 🎮 游戏厅
 
-[![Deploy to GitHub Pages](https://github.com/Civinar-Riley/blackjack-21/actions/workflows/deploy.yml/badge.svg)](https://github.com/Civinar-Riley/blackjack-21/actions/workflows/deploy.yml)
+[![Deploy to GitHub Pages](https://github.com/Civinar-Riley/riley-game-hall/actions/workflows/deploy.yml/badge.svg)](https://github.com/Civinar-Riley/riley-game-hall/actions/workflows/deploy.yml)
 [![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white&style=flat-square)](https://vite.dev/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES2022-F7DF1E?logo=javascript&logoColor=black&style=flat-square)](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen?style=flat-square)](package.json)
@@ -10,11 +10,11 @@
 
 **多游戏合集 —— 一个大厅，6 款游戏随便选**
 
-### [▶️ 进入游戏厅](https://civinar-riley.github.io/blackjack-21/)
+### [▶️ 进入游戏厅](https://civinar-riley.github.io/riley-game-hall/)
 
 </div>
 
-> 📌 21 点单游戏旧版（Vite 多文件）在 [`main-backup-21point` 分支](https://github.com/Civinar-Riley/blackjack-21/tree/main-backup-21point)，游戏厅里的 21 点是单文件版。
+> 📌 21 点单游戏旧版（Vite 多文件）在 [`main-backup-21point` 分支](https://github.com/Civinar-Riley/riley-game-hall/tree/main-backup-21point)，游戏厅里的 21 点是单文件版。
 
 ## 🕹️ 收录游戏
 
