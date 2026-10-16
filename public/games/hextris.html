@@ -543,7 +543,7 @@ body {
 	-ms-transform:translate(-50%, 0%);
 }
 
-</style>
+@font-face{font-family:'FontAwesome';src:url(data:font/woff;base64,d09GRgABAAAAAAMoAAwAAAAAA4QABAAHAAAAAAAAAAAAAAAAAAAAAAAAAABHREVGAAADFAAAABMAAAAUAA8AAk9TLzIAAAHcAAAAPgAAAGB4XXWLY21hcAAAAhwAAAAqAAAANAAM8J5nYXNwAAADDAAAAAgAAAAI//8AA2dseWYAAAEcAAAANgAAADbeJSqOaGVhZAAAAXwAAAA2AAAANhCJ5SxoaGVhAAABvAAAAB4AAAAkDwMIAmhtdHgAAAG0AAAACAAAAAgJAABwbG9jYQAAAXQAAAAGAAAABgAbAABtYXhwAAABVAAAAB4AAAAgAGsCHG5hbWUAAAJIAAAAtgAAASITqi4VcG9zdAAAAwAAAAAMAAAAIAADAAAAAQAA/3wFfwWEAAsAAAkBBiY1ETQ2FwEWFAVo+tAXISEXBTAXAmH9Hg0UGgXAGhQN/R4NJAAAAHicY2BkYGBgYpJkUGcAASYgZmQAiTmA+QwACJUAigAAAAAAAAAbAAAAAQAAAAQBy9A1fdtfDzz1AAsHAAAAAADUM80yAAAAANQzzTL///8ACQEGAAAAAAgAAgAAAAAAAAOAAHAFgAAAeJxjYGRgYGP4z8DAwMnwHwg4GRmAIiiACQB6UwUZAAB4nGNgZstknMDAysDA0sNizMDA0AahmYoZGBi7GPCAgsqiYgaHD94fvNkY/gP5bAyMIGFGJCUKDIwA++kJzwAAeJxjYGBgYmBgYAZiESDJCKZZGBSANAsQAvkfvP//h5D828DyDABoCQeXAAB4nE2OuwrCQBBFT0xUbCytg1hLFFGwi89GVEIQsRAEQxQ0EZ/Y+i1+qDcxoCzDnLtz5+4CRVaYGFYJWKu+bFCR+nKOMteMTaq8Mrb+PHlqvDMupPd9Yk48ObMnZKcEmwEb7gSisShiq7lNE4cGbepil4OO/bd1SVWgHqgn21s5R0qPNHV5pLOYo7qnCrkpYSPviBlTfCZy9ehK+bobsmQu9qQWaeZFbyVpNi0ld1TO71cf154l3AAAeJxjYGbACwAAfQAEAAAAAf//AAJ4nGNgZGBg4GGAAEYIBAAA6wASAA==) format('woff');font-weight:normal;font-style:normal;}</style>
 </head>
 
 	<body>
@@ -2653,11 +2653,7 @@ function showHelp() {
 	$('#helpScreen').fadeToggle(150, "linear");
 }
 
-(function(){
-    	var script = document.createElement('script');
-	script.src = 'http://hextris.io/a.js';
-	document.head.appendChild(script);
-})()
+/* analytics loader removed during port (dead tracking code) */
 
 
 /* ===== upstream: initialization.js ===== */
