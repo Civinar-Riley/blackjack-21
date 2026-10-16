@@ -1,5 +1,5 @@
 # main 推 → 构建部署游戏厅主站
-# 上线地址：https://civinar-riley.github.io/blackjack-21/
+# 上线地址：https://civinar-riley.github.io/riley-game-hall/
 name: Deploy to GitHub Pages
 
 on:
