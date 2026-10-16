@@ -7,6 +7,8 @@
   Google Fonts 外链、rrssb 社交分享组件与失效的线上分数上报（仅改编，不改玩法）。
   沙箱适配：gameOverDisplay() 里的 Cookies.set 包 try/catch（沙箱无
   allow-same-origin 时写 document.cookie 会抛 SecurityError 并中断结算流程）。
+  视觉统一（游戏厅设计语言 v1）：深色主题——六边形/外圈/文字改为深绿底+浅字，
+  方块与连击线功能色保持原样；开始界面播放图标补回 FontAwesome 子集字体。
 -->
 <!DOCTYPE html>
 <html lang='en'>
@@ -235,7 +237,7 @@ button:focus {
 }
 
 #currentHighScore {
-	color: #2c3e50;
+	color: #f2f0e4;
 	width:100%;
 	margin-top: -5px;
 	font-size:2em;
@@ -383,7 +385,7 @@ button:focus {
 body {
 	color:#ecf0f1;
 	font-family:'Exo', sans-serif;
-	background-color:#ecf0f1;
+	background-color:var(--t-bg);
 }
 
 #clickToExit {
@@ -397,13 +399,13 @@ body {
 	right:0;
 	height:100%;
 	width:100%;
-	background-color:#ecf0f1;
+	background-color:var(--t-bg);
 	z-index:0;
 }
 #title {
 	z-index:99;
 	margin-top:20px;
-	color:#2c3e50;
+	color:#f2f0e4;
 }
 
 #gameoverscreen {
@@ -883,13 +885,13 @@ function drawScoreboard() {
     var h = trueCanvas.height / 2 + gdy + 100 * settings.scale;
 	if (gameState === 0) {
 		renderText(trueCanvas.width / 2 + gdx + 6 * settings.scale, trueCanvas.height / 2 + gdy, 60, "rgb(236, 240, 241)", String.fromCharCode("0xf04b"), 'px FontAwesome');
-		renderText(trueCanvas.width / 2 + gdx + 6 * settings.scale, trueCanvas.height / 2.1 + gdy - 155 * settings.scale, 150, "#2c3e50", "六边形消消乐");
-		renderText(trueCanvas.width / 2 + gdx + 5 * settings.scale, h + 10, fontSize, "rgb(44,62,80)", '开始游戏');
+		renderText(trueCanvas.width / 2 + gdx + 6 * settings.scale, trueCanvas.height / 2.1 + gdy - 155 * settings.scale, 150, "#f2f0e4", "六边形消消乐");
+		renderText(trueCanvas.width / 2 + gdx + 5 * settings.scale, h + 10, fontSize, "#f2f0e4", '开始游戏');
 	} else if (gameState != 0 && textOpacity > 0) {
 		textOpacity -= 0.05;
 		renderText(trueCanvas.width / 2 + gdx + 6 * settings.scale, trueCanvas.height / 2 + gdy, 60, "rgb(236, 240, 241)", String.fromCharCode("0xf04b"), 'px FontAwesome');
-		renderText(trueCanvas.width / 2 + gdx + 6 * settings.scale, trueCanvas.height / 2 + gdy - 155 * settings.scale, 150, "#2c3e50", "六边形消消乐");
-		renderText(trueCanvas.width / 2 + gdx + 5 * settings.scale, h, fontSize, "rgb(44,62,80)", '开始游戏');
+		renderText(trueCanvas.width / 2 + gdx + 6 * settings.scale, trueCanvas.height / 2 + gdy - 155 * settings.scale, 150, "#f2f0e4", "六边形消消乐");
+		renderText(trueCanvas.width / 2 + gdx + 5 * settings.scale, h, fontSize, "#f2f0e4", '开始游戏');
 		ctx.globalAlpha = scoreOpacity;
 		renderText(trueCanvas.width / 2 + gdx, trueCanvas.height / 2 + gdy, scoreSize, color, score);
 	} else {
@@ -1925,9 +1927,9 @@ function update(dt) {
 
 /* ===== upstream: render.js ===== */
 ;function render() {
-	var grey = '#bdc3c7';
+	var grey = '#16211b';
 	if (gameState === 0) {
-		grey = "rgb(220, 223, 225)";
+		grey = "rgb(30, 42, 35)";
 	}
 	
 	ctx.clearRect(0, 0, trueCanvas.width, trueCanvas.height);
@@ -2009,13 +2011,13 @@ function renderBeginningText() {
         score_text = '三个以上同色块相连得分！'
         fontSize = 27
     }
-	renderText((trueCanvas.width)/2 + 2 * settings.scale,upperheight-0*settings.scale, fontSize, '#2c3e50', input_text);
-	renderText((trueCanvas.width)/2 + 2 * settings.scale,upperheight+33*settings.scale, fontSize, '#2c3e50', action_text);
+	renderText((trueCanvas.width)/2 + 2 * settings.scale,upperheight-0*settings.scale, fontSize, '#f2f0e4', input_text);
+	renderText((trueCanvas.width)/2 + 2 * settings.scale,upperheight+33*settings.scale, fontSize, '#f2f0e4', action_text);
     if (!mob) {
 	    drawKey("",(trueCanvas.width)/2 + 2 * settings.scale-2.5,upperheight+38*settings.scale);
     }
 
-	renderText((trueCanvas.width)/2 + 2 * settings.scale,lowerheight,fontSize, '#2c3e50', score_text);
+	renderText((trueCanvas.width)/2 + 2 * settings.scale,lowerheight,fontSize, '#f2f0e4', score_text);
 }
 
 function drawKey(key, x, y) {
@@ -2693,9 +2695,9 @@ function initialize(a) {
 		"rgb(46,204,113)": "rgb(150,227,183)"
 	};
 
-	window.hexagonBackgroundColor = 'rgb(236, 240, 241)';
-	window.hexagonBackgroundColorClear = 'rgba(236, 240, 241, 0.5)';
-	window.centerBlue = 'rgb(44,62,80)';
+	window.hexagonBackgroundColor = '#1b2620';
+	window.hexagonBackgroundColorClear = 'rgba(27, 38, 32, 0.5)';
+	window.centerBlue = '#24352c';
 	window.angularVelocityConst = 4;
 	window.scoreOpacity = 0;
 	window.textOpacity = 0;

@@ -5,6 +5,17 @@
  */
 import { saveKey, validateSavePayload, shimSource } from './gamesave.js';
 import './hall.css';
+import themeCss from './game-theme.css?raw';
+
+/* 每游戏主题 accent 色：设计语言统一、各留主题色（v1） */
+const ACCENTS = {
+    'blackjack.html': '#f5c542',    // 金（赌场）
+    'horse-racing.html': '#f5c542', // 金（赌场）
+    'zhajinhua.html': '#f5c542',    // 金（赌场）
+    'minesweeper.html': '#8b9cf0',  // 紫蓝（保留原风格）
+    'match-pairs.html': '#2fd6a3',  // 薄荷绿（保留原风格）
+    'hextris.html': '#5aa9ff',      // 雾蓝（原 #2c3e50 系）
+};
 
 /* 游戏清单：加游戏 = public/games/ 里丢一个单文件 html + 在这里加一行 */
 const GAMES = [
@@ -53,12 +64,21 @@ window.addEventListener('message', e => {
     flushT = setTimeout(flushSaves, 300);
 });
 
-/* 垫片必须先于游戏脚本执行：有 <head> 插其后，否则放最前 */
+/* 垫片必须先于游戏脚本执行：有 <head> 插其后，否则放最前。
+ * 同时注入统一设计语言（game-theme.css）：:root 变量 + 本游戏 accent；
+ * 给 body 加 hall-theme 类，让主题基础样式生效。 */
 function withShim(html, file) {
     const shim = shimSource(file, JSON.stringify(readSave(file)));
-    return /<head[^>]*>/i.test(html)
-        ? html.replace(/<head[^>]*>/i, m => m + shim)
-        : shim + html;
+    const accent = ACCENTS[file] || '#f5c542';
+    const theme = `<style>:root{--t-accent:${accent};}${themeCss}</style>`;
+    let out = /<head[^>]*>/i.test(html)
+        ? html.replace(/<head[^>]*>/i, m => m + shim + theme)
+        : shim + theme + html;
+    out = out.replace(/<body([^>]*)>/i, (m, attrs) =>
+        /class\s*=/i.test(attrs)
+            ? m.replace(/class\s*=\s*["']([^"']*)["']/i, 'class="$1 hall-theme"')
+            : `<body${attrs} class="hall-theme">`);
+    return out;
 }
 
 /* ---------------- 首页卡片墙 ---------------- */

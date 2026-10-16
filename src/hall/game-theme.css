@@ -1,0 +1,69 @@
+/* ============================================================
+ * 游戏厅统一设计语言 v1（设计 tokens）
+ * 由 hall.js 在 withShim 阶段注入每个游戏的 <head>（运行时），
+ * 单一来源，各游戏 CSS 用 var(--t-*) 引用。--t-accent 按游戏注入。
+ * 约定：只统一"框架层"（背景/标题/按钮/卡片/弹窗），玩法画布、
+ * 棋盘、功能色（扫雷数字/马匹颜色/方块颜色）一律不动。
+ * ============================================================ */
+:root {
+  --t-bg: #0c1411;            /* 主背景：深绿黑 */
+  --t-bg2: #0f1814;           /* 次级背景 */
+  --t-card: #15211b;          /* 卡片底 */
+  --t-card2: #1c2c23;         /* 卡片悬浮 / 次级卡片 */
+  --t-line: rgba(245, 197, 66, 0.16);  /* 描边（随 accent 微调透明度即可） */
+  --t-text: #f2f0e4;         /* 主文字 */
+  --t-muted: #93a89b;         /* 次级文字 */
+  --t-gold: #f5c542;          /* 品牌金（主按钮/强调） */
+  --t-accent: #f5c542;        /* 每游戏主题色：运行时按文件注入覆盖 */
+  --t-danger: #e5484d;
+  --t-success: #35c46f;
+  --t-info: #5aa9ff;
+  --t-radius: 14px;
+  --t-radius-s: 10px;
+  --t-font: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+            system-ui, -apple-system, "Segoe UI", sans-serif;
+  --t-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --t-btn-bg: var(--t-accent);
+  --t-btn-text: #1a1405;
+}
+
+/* 基础：背景/文字用 :where() 零特异度——游戏自带 body 背景（如炸金花的渐变）优先，
+ * 没写的才回退到主题底；字体用 body.hall-theme 统一覆盖 */
+:where(body.hall-theme) {
+  background: var(--t-bg);
+  color: var(--t-text);
+}
+body.hall-theme {
+  font-family: var(--t-font);
+  -webkit-tap-highlight-color: transparent;
+}
+body.hall-theme button { font-family: inherit; }
+
+/* 通用主按钮（游戏可直接套用 class="t-btn"，或照抄这套声明） */
+.t-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 12px 28px; border: none; border-radius: 999px;
+  background: var(--t-btn-bg); color: var(--t-btn-text);
+  font-size: 16px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+.t-btn:active { transform: scale(0.96); filter: brightness(1.08); }
+.t-btn.ghost {
+  background: transparent; color: var(--t-text);
+  border: 1px solid var(--t-line);
+}
+.t-btn.danger { background: var(--t-danger); color: #fff; }
+
+/* 通用标题 */
+.t-title {
+  color: var(--t-text); font-weight: 800; letter-spacing: 1px;
+}
+.t-title .t-accent, .t-accent { color: var(--t-accent); }
+.t-muted { color: var(--t-muted); }
+
+/* 通用卡片 */
+.t-card {
+  background: var(--t-card); border: 1px solid var(--t-line);
+  border-radius: var(--t-radius); box-shadow: var(--t-shadow);
+}

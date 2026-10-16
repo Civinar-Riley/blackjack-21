@@ -9,7 +9,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
         body {
             font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-            background: #0d0f14;
+            background: var(--t-bg);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -46,7 +46,7 @@
         .side-panel-title {
             font-size: 16px;
             font-weight: 700;
-            color: #ffd700;
+            color: var(--t-accent);
             text-align: center;
             padding-bottom: 10px;
             margin-bottom: 10px;
@@ -99,7 +99,7 @@
             text-shadow: 0 2px 8px rgba(0,0,0,0.7), 0 0 20px rgba(184,134,11,0.3);
             letter-spacing: 2px;
         }
-        .title span { color: #ffd700; }
+        .title span { color: var(--t-accent); }
 
         .header-right {
             display: flex;
@@ -127,7 +127,7 @@
         .score-item .num {
             font-weight: 700;
             font-size: 18px;
-            color: #ffd700;
+            color: var(--t-accent);
             min-width: 20px;
             text-align: center;
         }
@@ -151,7 +151,7 @@
         .chip-display .chip-amount {
             font-weight: 700;
             font-size: 18px;
-            color: #ffd700;
+            color: var(--t-accent);
             min-width: 50px;
             text-align: right;
         }
@@ -213,7 +213,7 @@
             transform: none !important;
         }
         .bet-chip-btn.selected {
-            border-color: #ffd700;
+            border-color: var(--t-accent);
             box-shadow: 0 0 16px rgba(255,215,0,0.4);
         }
 
@@ -226,7 +226,7 @@
         .bet-current {
             font-size: 20px;
             font-weight: 700;
-            color: #ffd700;
+            color: var(--t-accent);
             min-width: 60px;
             text-align: right;
         }
@@ -317,7 +317,7 @@
             color: #d4c9a8;
             flex: 1;
         }
-        .insurance-text strong { color: #ffd700; }
+        .insurance-text strong { color: var(--t-accent); }
         .insurance-actions {
             display: flex;
             gap: 8px;
@@ -370,7 +370,7 @@
             transition: all 0.3s;
         }
         .area-label .score-tag.bust { color: #ff6b6b; border-color: #ff6b6b55; }
-        .area-label .score-tag.blackjack { color: #ffd700; border-color: #ffd700; box-shadow: 0 0 20px rgba(255,215,0,0.25); }
+        .area-label .score-tag.blackjack { color: var(--t-accent); border-color: var(--t-accent); box-shadow: 0 0 20px rgba(255,215,0,0.25); }
 
         .hand {
             display: flex;
@@ -398,7 +398,7 @@
             font-weight: 600;
         }
         .hand-container .hand-label .hand-bet {
-            color: #ffd700;
+            color: var(--t-accent);
             margin-left: 8px;
         }
 
@@ -519,7 +519,7 @@
         .message.win { color: #5dff7a; border-color: #5dff7a55; background: rgba(0,40,0,0.4); }
         .message.lose { color: #ff6b6b; border-color: #ff6b6b55; background: rgba(40,0,0,0.4); }
         .message.push { color: #ffd93d; border-color: #ffd93d55; background: rgba(40,30,0,0.4); }
-        .message.blackjack-msg { color: #ffd700; border-color: #ffd700; background: rgba(40,30,0,0.5); box-shadow: 0 0 30px rgba(255,215,0,0.15); }
+        .message.blackjack-msg { color: var(--t-accent); border-color: var(--t-accent); background: rgba(40,30,0,0.5); box-shadow: 0 0 30px rgba(255,215,0,0.15); }
 
         .message.pop { animation: msgPop 0.4s ease; }
         @keyframes msgPop {
@@ -605,7 +605,7 @@
             font-weight: 700;
             color: #f5e7b0;
         }
-        .side-stats-item .stat-value.gold { color: #ffd700; }
+        .side-stats-item .stat-value.gold { color: var(--t-accent); }
         .side-stats-item .stat-value.green { color: #5dff7a; }
         .side-stats-item .stat-value.red { color: #ff6b6b; }
 
@@ -659,7 +659,7 @@
             left: 50%;
             transform: translateX(-50%) translateY(-100px);
             background: linear-gradient(145deg, #2a2a1a, #1a1a0a);
-            border: 2px solid #ffd700;
+            border: 2px solid var(--t-accent);
             border-radius: 16px;
             padding: 12px 24px;
             box-shadow: 0 8px 40px rgba(0,0,0,0.8), 0 0 40px rgba(255,215,0,0.15);
@@ -676,7 +676,7 @@
         .achievement-toast .ach-text .ach-title {
             font-size: 16px;
             font-weight: 700;
-            color: #ffd700;
+            color: var(--t-accent);
         }
         .achievement-toast .ach-text .ach-desc {
             font-size: 13px;
@@ -752,7 +752,7 @@
 
         /* ========== 可访问性: 焦点样式 ========== */
         .btn:focus-visible, .bet-chip-btn:focus-visible, .btn-bet-deal:focus-visible, .btn-insurance:focus-visible {
-            outline: 2px solid #ffd700;
+            outline: 2px solid var(--t-accent);
             outline-offset: 3px;
         }
         /* 减少动效 */
@@ -787,7 +787,7 @@
             position: relative;
         }
         .stats-panel h2 {
-            color: #ffd700;
+            color: var(--t-accent);
             font-size: 22px;
             margin-bottom: 16px;
             text-align: center;
@@ -813,7 +813,7 @@
             font-weight: 700;
             color: #f5e7b0;
         }
-        .stats-item .stat-value.gold { color: #ffd700; }
+        .stats-item .stat-value.gold { color: var(--t-accent); }
         .stats-item .stat-value.green { color: #5dff7a; }
         .stats-item .stat-value.red { color: #ff6b6b; }
 
@@ -883,7 +883,7 @@
             padding: 4px;
             transition: color 0.2s;
         }
-        .btn-stats-toggle:hover { color: #ffd700; }
+        .btn-stats-toggle:hover { color: var(--t-accent); }
 
         /* ========== 使用说明内容 ========== */
         .help-content {
@@ -893,7 +893,7 @@
             margin-bottom: 14px;
         }
         .help-section h3 {
-            color: #ffd700;
+            color: var(--t-accent);
             font-size: 15px;
             margin-bottom: 6px;
             border-bottom: 1px solid rgba(255,215,0,0.1);
