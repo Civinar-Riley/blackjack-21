@@ -6,8 +6,9 @@
 [![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white&style=flat-square)](https://vite.dev/)
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES2022-F7DF1E?logo=javascript&logoColor=black&style=flat-square)](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen?style=flat-square)](package.json)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square)](https://www.gnu.org/licenses/gpl-3.0)
 
-**多游戏合集 —— 一个大厅，4 款游戏随便选**
+**多游戏合集 —— 一个大厅，6 款游戏随便选**
 
 ### [▶️ 进入游戏厅](https://civinar-riley.github.io/blackjack-21/)
 
@@ -23,6 +24,18 @@
 | 💣 扫雷 | 经典扫雷，扫开所有安全格 |
 | 🏇 赛马场 | 赛马竞速，看准马儿下注 |
 | 🀄 连连看 | 把相同的牌全部配对消除 |
+| 🃏 炸金花 | 3 张牌比大小，3 个 AI 陪你玩（还会唬人） |
+| ⬡ 六边形消消乐 | Hextris 开源移植：旋转六边形接住落块，三连同色消除（已汉化） |
+
+## 📸 实机截图
+
+| 大厅 | 21 点 | 炸金花 |
+|------|------|------|
+| ![大厅](screenshots/hall.png) | ![21点](screenshots/blackjack.png) | ![炸金花](screenshots/zhajinhua.png) |
+
+| 六边形消消乐 | 扫雷 | 赛马场 | 连连看 |
+|------|------|------|------|
+| ![六边形消消乐](screenshots/hextris.png) | ![扫雷](screenshots/minesweeper.png) | ![赛马场](screenshots/horse.png) | ![连连看](screenshots/matchpairs.png) |
 
 ## ✨ 特性
 
@@ -53,3 +66,9 @@ npm run build    # 构建，产物在 dist/
 ```
 
 > ⚠️ 直接双击 `dist/index.html` 打不开（游戏靠 `fetch` 动态加载，浏览器安全限制要求走 http 协议）。本地测试用 `npx -y serve dist` 起个静态服务再访问。
+
+## 📄 开源协议
+
+本仓库以 **GPL-3.0** 协议开源（见 [LICENSE](LICENSE)）：可以自由使用、修改、分发，但修改后再发布也必须以同样的 GPL-3.0 开源。
+
+其中「六边形消消乐」改编自 [Hextris](https://github.com/Hextris/hextris)（原作者 Logan Engstrom 等四人，同样 GPL-3.0），协议文本与改动说明见 [`public/games/hextris-LICENSE.md`](public/games/hextris-LICENSE.md)。
