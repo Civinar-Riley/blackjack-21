@@ -14,8 +14,14 @@ body{background:#0b3d2e;background:radial-gradient(ellipse at 50% 30%,#146b4f 0%
 #pot{background:rgba(0,0,0,.35);border:1px solid #d4a437;border-radius:20px;padding:5px 14px;font-size:15px;font-weight:700;color:#ffd76a}
 #roundinfo{font-size:12px;color:#9fd8b8}
 #helpbtn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;width:28px;height:28px;border-radius:50%;font-size:15px}
-/* AI 区 */
-#airow{display:flex;justify-content:space-between;gap:6px;margin:6px 0}
+/* 牌桌：上/左/右 + 中央 */
+#table{display:grid;grid-template-columns:1fr 1.35fr 1fr;grid-template-rows:auto 1fr;grid-template-areas:". top ." "left center right";gap:6px;align-items:center;flex:1;min-height:0;margin:4px 0}
+#seat-top{grid-area:top;width:100%;max-width:170px;margin:0 auto}
+#seat-left{grid-area:left}
+#seat-right{grid-area:right}
+.tseat .seat{width:100%}
+#tcenter{grid-area:center;text-align:center;min-width:0}
+#midlog{font-size:13px;color:#ffe9a8;min-height:20px;text-shadow:0 1px 2px rgba(0,0,0,.5);margin-bottom:6px}
 .seat{flex:1;background:rgba(0,0,0,.28);border:2px solid transparent;border-radius:12px;padding:6px 4px;text-align:center;position:relative;transition:border-color .2s;min-width:0}
 .seat.active{border-color:#ffd76a;box-shadow:0 0 10px rgba(255,215,106,.45)}
 .seat.folded{opacity:.42;filter:grayscale(.7)}
@@ -66,39 +72,50 @@ body{background:#0b3d2e;background:radial-gradient(ellipse at 50% 30%,#146b4f 0%
 #panel .btn{margin-top:12px;width:100%;flex:none}
 #helplist{text-align:left;font-size:13px;line-height:1.9;color:#e8f5e9}
 #helplist b{color:#ffd76a}
-/* 宽屏侧栏：牌型介绍 */
+/* 宽屏：桌子撑开，牌型介绍放桌子中央（手机上隐藏，点 ? 看） */
 #handguide{display:none}
 @media (min-width:920px){
-  #handguide{display:block;position:fixed;left:calc(50% - 240px - 225px);top:50%;transform:translateY(-50%);width:205px;background:rgba(0,0,0,.38);border:1px solid #d4a437;border-radius:12px;padding:12px 10px;font-size:12px}
-  #handguide h3{font-size:14px;color:#ffd76a;margin-bottom:8px;text-align:center}
-  #handguide .hr{display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px dashed rgba(255,255,255,.12)}
+  #app{max-width:900px}
+  #topbar{width:100%;max-width:480px;margin:0 auto}
+  #userbox{width:100%;max-width:480px;margin:auto auto 0}
+  #table{grid-template-columns:1fr 1.6fr 1fr}
+  #tcenter{min-height:0}
+  #handguide{display:block;background:rgba(0,0,0,.38);border:1px solid #d4a437;border-radius:12px;padding:10px 12px;font-size:12px;text-align:left;max-width:340px;margin:0 auto}
+  #handguide h3{font-size:13px;color:#ffd76a;margin-bottom:6px;text-align:center}
+  #handguide .hr{display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px dashed rgba(255,255,255,.12)}
   #handguide .hr:last-of-type{border-bottom:none}
   #handguide .hn{color:#ffe9a8;font-weight:700;white-space:nowrap}
   #handguide .he{font-size:12px;letter-spacing:1px;white-space:nowrap}
   #handguide .he .r{color:#ff9d9d}#handguide .he .b{color:#ddd}
-  #handguide .note{font-size:11px;color:#8ab69a;margin-top:8px;line-height:1.7}
+  #handguide .note{font-size:11px;color:#8ab69a;margin-top:6px;line-height:1.7}
 }
 </style>
 </head>
 <body>
-<aside id="handguide">
-  <h3>🃏 牌型（大 → 小）</h3>
-  <div class="hr"><span class="hn">豹子</span><span class="he"><span class="b">K♠</span> <span class="r">K♥</span> <span class="b">K♣</span></span></div>
-  <div class="hr"><span class="hn">同花顺</span><span class="he"><span class="b">Q♠</span> <span class="b">J♠</span> <span class="b">10♠</span></span></div>
-  <div class="hr"><span class="hn">同花</span><span class="he"><span class="b">A♠</span> <span class="b">9♠</span> <span class="b">5♠</span></span></div>
-  <div class="hr"><span class="hn">顺子</span><span class="he"><span class="r">Q♥</span> <span class="b">J♣</span> <span class="r">10♦</span></span></div>
-  <div class="hr"><span class="hn">对子</span><span class="he"><span class="b">9♠</span> <span class="r">9♥</span> <span class="b">5♣</span></span></div>
-  <div class="hr"><span class="hn">单张</span><span class="he"><span class="b">A♠</span> <span class="r">J♥</span> <span class="b">8♣</span></span></div>
-  <div class="note">A23 为最小顺子<br>闷牌下注单倍，看牌后×2<br>比牌花双倍注，输家出局</div>
-</aside>
 <div id="app">
   <div id="topbar">
     <div id="pot">底池 0</div>
     <div id="roundinfo"></div>
     <button id="helpbtn">?</button>
   </div>
-  <div id="airow"></div>
-  <div id="midlog">发牌中…</div>
+  <div id="table">
+    <div class="tseat" id="seat-top"></div>
+    <div class="tseat" id="seat-left"></div>
+    <div id="tcenter">
+      <div id="midlog">发牌中…</div>
+      <aside id="handguide">
+        <h3>🃏 牌型（大 → 小）</h3>
+        <div class="hr"><span class="hn">豹子</span><span class="he"><span class="b">K♠</span> <span class="r">K♥</span> <span class="b">K♣</span></span></div>
+        <div class="hr"><span class="hn">同花顺</span><span class="he"><span class="b">Q♠</span> <span class="b">J♠</span> <span class="b">10♠</span></span></div>
+        <div class="hr"><span class="hn">同花</span><span class="he"><span class="b">A♠</span> <span class="b">9♠</span> <span class="b">5♠</span></span></div>
+        <div class="hr"><span class="hn">顺子</span><span class="he"><span class="r">Q♥</span> <span class="b">J♣</span> <span class="r">10♦</span></span></div>
+        <div class="hr"><span class="hn">对子</span><span class="he"><span class="b">9♠</span> <span class="r">9♥</span> <span class="b">5♣</span></span></div>
+        <div class="hr"><span class="hn">单张</span><span class="he"><span class="b">A♠</span> <span class="r">J♥</span> <span class="b">8♣</span></span></div>
+        <div class="note">A23 为最小顺子<br>闷牌单倍，看牌后×2<br>比牌双倍注，输家出局</div>
+      </aside>
+    </div>
+    <div class="tseat" id="seat-right"></div>
+  </div>
   <div id="userbox">
     <div id="ucards"></div>
     <div id="uinfo"><span id="uname">你 👁<span id="ulooked" style="display:none">已看牌</span></span><span class="chips" id="uchips"></span></div>
@@ -370,18 +387,19 @@ function miniCard(c,back){
 function render(){
   $('pot').textContent='底池 '+S.pot;
   $('roundinfo').textContent='第 '+(S.orbit+1)+' 轮 · 注 '+S.curBet;
-  // AI 席位
-  $('airow').innerHTML=S.players.slice(1).map(p=>{
+  // AI 席位：上/左/右
+  const spots=['seat-top','seat-left','seat-right'];
+  S.players.slice(1).forEach((p,k)=>{
     const cls='seat'+(S.turnIdx===p.idx&&canAct(p)?' active':'')+(p.folded?' folded':'')+(S.compareMode&&!p.folded?' compare-target':'');
     const cards=p.hand.map(c=>miniCard(c,p.folded?false:true)).join('');
-    return '<div class="'+cls+'" data-i="'+p.idx+'"><div class="avatar">'+p.avatar+'</div>'
+    $(spots[k]).innerHTML='<div class="'+cls+'" data-i="'+p.idx+'"><div class="avatar">'+p.avatar+'</div>'
       +'<div class="nm">'+p.name+(p.looked?' 👁':'')+'</div>'
       +'<div class="chips">💰'+p.chips+'</div><div class="bet">已下 '+p.paid+'</div>'
       +'<div class="cards">'+cards+'</div>'
       +'<div class="st">'+(p.folded?'弃牌':p.allIn?'全下':'')+'</div></div>';
-  }).join('');
+  });
   // 点击比牌目标
-  document.querySelectorAll('#airow .seat').forEach(el=>{
+  document.querySelectorAll('#table .seat').forEach(el=>{
     el.onclick=()=>{
       if(!S.compareMode)return;
       const p=S.players[+el.dataset.i];
